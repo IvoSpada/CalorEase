@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /
+
+# Redirige URLs amigables a index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z0-9_-]+)/?([0-9]*)$ index.php?ruta=$1&id=$2 [QSA,L]
