@@ -1,242 +1,516 @@
 :root {
-    /* Fuentes */
-    --fuente-heading: Arial, sans-serif;
-    --fuente-parrafos: Arial, sans-serif;
+  /* Fuentes */
+  --fuente-heading: Arial, sans-serif;
+  --fuente-parrafos: Arial, sans-serif;
 
-    /* Colores */
-    --color-fondo: #0e1621;
-    --color-texto: #ffffff;
-    --color-primario: #007bff;
-    --color-primario-hover: #0056b3;
-    --color-input: #e0e0e0;
-    --color-secundario: #1c2b3a;
-    --color-texto: #ffffff;
-    --color-boton: #007bff;
-    --color-boton-hover: #0056b3;
-    --fuente-primaria: 'Arial', sans-serif;
+  /* Colores */
+  --color-secundario: #0e1621;
+  --color-texto: #ffffff;
+  --color-primario: #007bff;
+  --color-primario-hover: #0056b3;
+  --color-input: #e0e0e0;
+  --color-fondo: #1c2b3a;
+  --color-texto: #ffffff;
+  --color-boton: #007bff;
+  --color-boton-hover: #0056b3;
+  --fuente-primaria: "Arial", sans-serif;
 }
 
 /* Reset y globales */
-html {
-    box-sizing: border-box;
-    font-size: 62.5%;
-    /* 1rem = 10px */
-    scroll-snap-type: y mandatory;
+main {
+  margin: 1rem 0;
 }
 
-*, *:before, *:after {
-    box-sizing: inherit;
+html {
+  box-sizing: border-box;
+  font-size: 62.5%;
+  /* 1rem = 10px */
+  scroll-snap-type: y mandatory;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
 }
 
 body {
-    font-family: var(--fuente-parrafos);
-    font-size: 1.6rem;
-    line-height: 2;
-    background-color: var(--color-fondo);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    padding: 20px;
+  font-family: var(--fuente-parrafos);
+  font-size: 1.6rem;
+  line-height: 2;
+  background-color: var(--color-fondo);
+  height: 100vh;
+}
+.flexallcenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Contenedor de autenticación */
 .auth-container {
-    text-align: center;
-    background-color: var(--color-fondo);
-    padding: 20px;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 400px;
+  text-align: center;
+  background-color: var(--color-fondo);
+  padding: 20px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
 }
 
 /* Título */
 .auth-title {
-    color: var(--color-texto);
-    font-size: 26px;
-    margin-bottom: 10px;
+  color: var(--color-texto);
+  font-size: 26px;
+  margin-bottom: 10px;
 }
 
 /* Línea divisoria */
 .auth-divider {
-    width: 50px;
-    height: 2px;
-    background-color: var(--color-texto);
-    border: none;
-    margin: 0 auto 20px auto;
+  width: 50px;
+  height: 2px;
+  background-color: var(--color-texto);
+  border: none;
+  margin: 0 auto 20px auto;
 }
 
 /* Formulario */
 .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 /* Campos de entrada */
 .auth-input {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 10px;
-    background-color: var(--color-input);
-    font-size: 18px;
-    text-align: center;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background-color: var(--color-input);
+  font-size: 18px;
+  text-align: center;
 }
 
 /* Botón */
 .auth-button {
-    background-color: var(--color-primario);
-    color: var(--color-texto);
-    border: none;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 18px;
+  background-color: var(--color-primario);
+  color: var(--color-texto);
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 18px;
 }
 
 .auth-button:hover {
-    background-color: var(--color-primario-hover);
+  background-color: var(--color-primario-hover);
 }
 
 /* Enlace */
 .auth-link {
-    display: block;
-    margin-top: 10px;
-    a{
-        color: var(--color-texto);
-        text-decoration: none;
-        font-size: 16px;
-    }
+  display: block;
+  margin-top: 10px;
+}
 
+.auth-link a {
+  color: var(--color-texto);
+  text-decoration: none;
+  font-size: 16px;
 }
 
 .auth-link a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* Responsive */
 
 /* Tablets (entre 600px y 1024px) */
 @media (min-width: 600px) and (max-width: 1024px) {
-    .auth-container {
-        max-width: 500px;
-    }
+  .auth-container {
+    max-width: 500px;
+  }
 
-    .auth-title {
-        font-size: 30px;
-    }
+  .auth-title {
+    font-size: 30px;
+  }
 
-    .auth-input {
-        padding: 18px;
-        font-size: 20px;
-    }
+  .auth-input {
+    padding: 18px;
+    font-size: 20px;
+  }
 
-    .auth-button {
-        font-size: 20px;
-        padding: 14px;
-    }
+  .auth-button {
+    font-size: 20px;
+    padding: 14px;
+  }
 }
 
 /* Celulares (máximo 599px) */
 @media (max-width: 599px) {
-    .auth-container {
-        max-width: 90%;
-    }
+  .auth-container {
+    max-width: 90%;
+  }
 
-    .auth-title {
-        font-size: 24px;
-    }
+  .auth-title {
+    font-size: 24px;
+  }
 
-    .auth-input {
-        padding: 16px;
-        font-size: 18px;
-    }
+  .auth-input {
+    padding: 16px;
+    font-size: 18px;
+  }
 
-    .auth-button {
-        font-size: 18px;
-        padding: 12px;
-    }
+  .auth-button {
+    font-size: 18px;
+    padding: 12px;
+  }
 }
 
+/* Estilos generales */
+.BodyEdad {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0c0f16;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* Estilos para el header */
+.HeaderEdad {
+  width: 100%;
+  background-color: #2c3e50;
+  padding: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.navEdad {
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.navEdad a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+/* Contenedor principal */
+.containerEdad {
+  background: #0c0f16;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 350px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Estilos para el formulario */
+.formEdad {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.h2Edad {
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+}
+
+.seleccionEdad[type="text"] {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: #d1d1d1;
+  text-align: center;
+}
+
+.sigEdad {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.sigEdad:hover {
+  background-color: #0056b3;
+}
+/*-----------------------------------------------------------------------*/
+/* Estilos generales */
+.BodyRepContraseña {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0c0f16;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* Estilos para el header */
+.HeaderRepContraseña {
+  width: 100%;
+  background-color: #2c3e50;
+  padding: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.NavRepContraseña {
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.NavRepContraseña a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+/* Contenedor principal */
+.ContainerRepContraseña {
+  background: #0c0f16;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 350px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Estilos para el formulario */
+.FormRepContraseña {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.h2RepContraseña {
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+}
+
+.InputRepContraseña[type="text"],
+.InputRepContraseña[type="password"] {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: #d1d1d1;
+  text-align: center;
+}
+
+.BotonRepContraseña {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.BotonRepContraseña:hover {
+  background-color: #0056b3;
+}
 
 /*MAIN*/
 
 .hero {
-    background-color: var(--color-primario);
-    color: var(--color-texto);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 40px 5%;
-    gap: 20px;
+  background-color: var(--color-secundario);
+  color: var(--color-texto);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 5%;
+  gap: 2rem;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem;
+  background-color: #0D1321; /* Color de fondo */
+  overflow: hidden; /* Evita que la imagen sobresalga */
+}
+
+.hero__lechuga {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 150px; /* Ajusta según sea necesario */
+  max-width: 35%; /* Para hacerlo responsive */
 }
 
 .hero__content {
-    max-width: 50%;
+  flex: 65%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 2rem;
+  font-family: var(--fuente-primaria);
+}
+.hero__content h1 {
+  font-size: 8rem;
+  margin: 0;
+}
+.hero__logo {
+  flex: 35%;
+}
+.hero__logo img {
+  max-width: 100%;
 }
 
 .hero__title {
-    font-size: 3.5rem;
-    font-weight: bold;
-    margin-bottom: 15px;
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
 }
 
 .hero__text {
-    font-size: 1.6rem;
-    line-height: 1.6;
-    margin-bottom: 20px;
+  font-size: 1.6rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  width: 50%;
+  max-width: 50rem;
 }
 
 .hero__buttons {
-    display: flex;
-    gap: 15px;
+  display: flex;
+  gap: 15px;
 }
 
 .btn {
-    display: inline-block;
-    text-align: center;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 1.6rem;
-    font-weight: bold;
-    text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-decoration: none;
 }
 
 .btn--primary {
-    background-color: var(--color-boton);
-    color: var(--color-texto);
+  background-color: var(--color-boton);
+  color: var(--color-texto);
 }
 
 .btn--primary:hover {
-    background-color: var(--color-boton-hover);
+  background-color: var(--color-boton-hover);
 }
 
 .btn--secondary {
-    color: var(--color-texto);
-    text-decoration: underline;
-}
-
-.hero__logo img {
-    max-width: 150px;
+  color: var(--color-texto);
+  text-decoration: underline;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-    .hero {
-        flex-direction: column;
-        text-align: center;
-    }
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
 
-    .hero__content {
-        max-width: 100%;
-    }
+  .hero__content {
+    max-width: 100%;
+  }
 
-    .hero__buttons {
-        justify-content: center;
-    }
+  .hero__buttons {
+    justify-content: center;
+  }
 
-    .hero__logo img {
-        margin-top: 20px;
-    }
+  .hero__logo img {
+    margin-top: 20px;
+  }
+  .hero__text {
+    width: 100%;
+    /* max-width: 50rem; */
+  }
+}
+/*----------------------------
+------------NAVBAR------------
+------------------------------*/
+
+.navbar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 5%;
+  background-color: var(--color-secundario);
+  width: 100%;
+  margin-top: 0;
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  width: 5%;
+  margin: 1rem;
+}
+
+.navbar__logo img {
+  max-width: min-content;
+  width: 100%;
+}
+
+.navbar__links {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 10px;
+  width: 20%;
+  min-width: fit-content;
+}
+
+.navbar__links a {
+  color: var(--color-texto);
+  text-decoration: none;
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+
+.navbar__links a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .navbar__links {
+    margin-top: 10px;
+  }
+  .navbar__logo {
+    width: 10%;
+  }
 }
