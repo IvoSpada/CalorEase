@@ -21,6 +21,15 @@ main {
   margin: 1rem 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+p {
+  color: var(--color-texto);
+}
+
 html {
   box-sizing: border-box;
   font-size: 62.5%;
@@ -32,6 +41,7 @@ html {
 *:before,
 *:after {
   box-sizing: inherit;
+  z-index: 1000;
 }
 
 body {
@@ -45,6 +55,23 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.float-image-top-right {
+  position: absolute; /* Position it absolutely within the container */
+  top: 0; /* Position it at the top */
+  right: 0; /* Position it at the right */
+  width: 25rem;
+  margin-top: -3rem;
+  z-index: 10;
+}
+.float-image-bottom-right {
+  position: absolute; /* Position it absolutely within the container */
+  bottom: 0;
+  right: 0; /* Position it at the right */
+  width: 35rem;
+  margin-right: -2.5rem;
+  margin-bottom: -4rem;
 }
 
 /* Contenedor de autenticación */
@@ -166,90 +193,6 @@ body {
   }
 }
 
-/* Estilos generales */
-.BodyEdad {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #0c0f16;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  flex-direction: column;
-}
-
-/* Estilos para el header */
-.HeaderEdad {
-  width: 100%;
-  background-color: #2c3e50;
-  padding: 10px;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.navEdad {
-  display: flex;
-  align-items: center;
-  padding-left: 10px;
-}
-
-.navEdad a {
-  color: white;
-  text-decoration: none;
-  font-size: 18px;
-}
-
-/* Contenedor principal */
-.containerEdad {
-  background: #0c0f16;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  width: 350px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Estilos para el formulario */
-.formEdad {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.h2Edad {
-  font-size: 24px;
-  color: white;
-  font-weight: bold;
-}
-
-.seleccionEdad[type="text"] {
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 18px;
-  background-color: #d1d1d1;
-  text-align: center;
-}
-
-.sigEdad {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.sigEdad:hover {
-  background-color: #0056b3;
-}
 /*-----------------------------------------------------------------------*/
 /* Estilos generales */
 .BodyRepContraseña {
@@ -346,6 +289,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 40px 5%;
+  padding-bottom: 2rem;
   gap: 2rem;
 }
 
@@ -355,8 +299,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 2rem;
-  background-color: #0D1321; /* Color de fondo */
+  background-color: #0d1321; /* Color de fondo */
   overflow: hidden; /* Evita que la imagen sobresalga */
+  padding: 0 6rem;
 }
 
 .hero__lechuga {
@@ -374,6 +319,8 @@ body {
   justify-content: space-around;
   gap: 2rem;
   font-family: var(--fuente-primaria);
+  max-width: 100%;
+  padding: 1.5rem;
 }
 .hero__content h1 {
   font-size: 8rem;
@@ -381,6 +328,8 @@ body {
 }
 .hero__logo {
   flex: 35%;
+  position: relative; /* This will be the reference for the absolute positioning */
+  z-index: 1000;
 }
 .hero__logo img {
   max-width: 100%;
@@ -402,7 +351,10 @@ body {
 
 .hero__buttons {
   display: flex;
+  flex-direction: column;
   gap: 15px;
+  min-width: 20rem;
+  width: 33%;
 }
 
 .btn {
@@ -418,6 +370,7 @@ body {
 .btn--primary {
   background-color: var(--color-boton);
   color: var(--color-texto);
+  border-radius: 3rem;
 }
 
 .btn--primary:hover {
@@ -429,6 +382,170 @@ body {
   text-decoration: underline;
 }
 
+/*-----------------------------------------------
+----------------NUESTRO OBJETIVO-----------------
+-----------------------------------------------*/
+.nuestro-objetivo {
+  display: flex;
+  flex-direction: row;
+  height: 80%;
+  width: 80%;
+  margin: 5rem auto;
+  gap: 5rem;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  min-height: fit-content;
+}
+.nuestro-objetivo-img {
+  flex: 35%;
+  height: 100%;
+}
+.nuestro-objetivo-img img {
+  height: 100%;
+  border-radius: 5rem;
+}
+.nuestro-objetivo-info {
+  flex: 65%;
+}
+.nuestro-objetivo h3,
+.nuestro-objetivo h2,
+.nuestro-objetivo p {
+  color: var(--color-texto);
+}
+.nuestro-objetivo h3 {
+  font-size: 5rem;
+  line-height: 5rem;
+  width: 80%;
+}
+.nuestro-objetivo h2 {
+  font-size: 2.5rem;
+}
+.nuestro-objetivo p {
+  font-weight: bold;
+  width: 80%;
+}
+
+/* Media Query para pantallas más pequeñas */
+
+@media (max-width: 910px) {
+  .nuestro-objetivo h3 {
+    font-size: 3rem;
+    line-height: 4rem;
+  }
+
+  .nuestro-objetivo h2 {
+    font-size: 2rem;
+  }
+
+  .nuestro-objetivo p {
+    font-size: 1.6rem;
+    width: 90%;
+  }
+}
+@media (max-width: 810px) {
+  .nuestro-objetivo {
+    margin-top: 10rem;
+    flex-direction: column;
+    width: 90%;
+    gap: 3rem;
+    height: fit-content;
+  }
+
+  .nuestro-objetivo-img {
+    /* width: 100%; */
+    height: 50rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nuestro-objetivo-img img {
+    width: 100%;
+    height: 40rem;
+  }
+
+  .nuestro-objetivo-info {
+    flex: 50%;
+    width: 100%;
+    text-align: center;
+  }
+
+  .nuestro-objetivo h3,
+  .food-details h3 {
+    font-size: 3rem;
+    line-height: 4rem;
+    width: 100%;
+  }
+
+  .nuestro-objetivo h2 {
+    font-size: 2rem;
+  }
+
+  .nuestro-objetivo p {
+    font-size: 1.6rem;
+    width: 90%;
+    margin: 0 auto;
+  }
+}
+
+/* Media Query para pantallas muy pequeñas (móviles) */
+@media (max-width: 480px) {
+  .nuestro-objetivo h3 {
+    font-size: 2.5rem;
+    line-height: 3rem;
+  }
+
+  .nuestro-objetivo h2 {
+    font-size: 1.8rem;
+  }
+
+  .nuestro-objetivo p {
+    font-size: 1.4rem;
+  }
+}
+
+/*---------------------------------
+-----------food info--------------
+----------------------------------*/
+.food-info {
+  height: auto;
+  margin-top: 5rem;
+  background-color: var(--color-secundario);
+  padding-top: 5rem;
+  padding: 1rem;
+}
+
+.food-details h3 {
+  font-size: 4.5rem;
+  line-height: 4rem;
+  width: 80%;
+  margin: 1rem auto;
+  margin-bottom: 3rem;
+}
+.food-details p {
+  width: 80%;
+  margin: 0 auto;
+  font-size: 2rem;
+  font-weight: bolder;
+}
+.food-details {
+  text-align: center;
+  width: 60%;
+  margin: 3rem auto;
+  min-height: fit-content;
+  height: 40rem;
+  background-color: var(--color-fondo);
+  border-radius: 2rem;
+  padding: 3rem 1.5rem;
+}
+.food-search-bar input {
+  width: 80%;
+  height: 4.5rem;
+  margin: 1.5rem;
+  border-radius: 3rem;
+  border: none;
+  background-color: var(--color-input);
+}
 /* Responsive */
 @media (max-width: 1024px) {
   .hero {
@@ -436,20 +553,24 @@ body {
     text-align: center;
   }
 
-  .hero__content {
-    max-width: 100%;
-  }
-
   .hero__buttons {
     justify-content: center;
+    margin: 0 auto;
   }
 
   .hero__logo img {
     margin-top: 20px;
+    width: 30%;
   }
   .hero__text {
     width: 100%;
     /* max-width: 50rem; */
+  }
+}
+
+@media (max-width: 540px) {
+  .hero h1 {
+    font-size: 5rem;
   }
 }
 /*----------------------------
@@ -513,4 +634,253 @@ body {
   .navbar__logo {
     width: 10%;
   }
+}
+
+/*EDAD ---------------------------------------------*/
+/* Estilos generales */
+.BodyEdad {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0c0f16;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* Estilos para el header */
+.HeaderEdad {
+  width: 100%;
+  background-color: #2c3e50;
+  padding: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.NavEdad {
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.NavEdad a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+/* Contenedor principal */
+.ContainerEdad {
+  background: #0c0f16;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 350px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Estilos para el formulario */
+.FormEdad {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.h2Edad {
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+}
+
+.seleccionEdad[type="text"] {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: #d1d1d1;
+  text-align: center;
+}
+
+.SigEdad {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.SigEdad:hover {
+  background-color: #0056b3;
+}
+
+/*PESO------------------------------*/
+
+/* Estilos generales */
+.BodyPeso {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0c0f16;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* Estilos para el header */
+.HeaderPeso {
+  width: 100%;
+  background-color: #2c3e50;
+  padding: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.NavPeso {
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+
+.NavPeso a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+/* Contenedor principal */
+.ContainerPeso {
+  background: #0c0f16;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 350px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Estilos para el formulario */
+.FormPeso {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.h2Peso {
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+}
+
+.seleccionPeso[type="text"] {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  background-color: #d1d1d1;
+  text-align: center;
+}
+
+.SigPeso {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.SigPeso:hover {
+  background-color: #0056b3;
+}
+
+/*-------------------------------------- OBJETIVOS ---------------------------------*/
+
+/* Estilos generales */
+.BodyObjetivos {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0c0f16;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+/* Estilos para el header */
+.HeaderObjetivos {
+  width: 100%;
+  background-color: #2c3e50;
+  padding: 15px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.NavObjetivos {
+  display: flex;
+  align-items: center;
+  padding-left: 15px;
+}
+
+.VolverObjetivos img {
+  width: 30px;
+  height: 30px;
+}
+
+/* Contenedor principal */
+.ContainerObjetivos {
+  background: #0c0f16;
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  width: 500px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Estilos del título */
+.h2Objetivos {
+  font-size: 32px;
+  color: white;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+/* Estilos de los botones */
+.BotonObjetivos {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 18px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: bold;
+  width: 100%;
+  margin-bottom: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.BotonObjetivos:hover {
+  background-color: #0056b3;
 }
