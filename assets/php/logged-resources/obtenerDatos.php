@@ -1,5 +1,6 @@
 <?php
-if (!isset($_SESSION)) session_start();
+if (!isset($_SESSION))
+    session_start();
 
 $servername = "localhost";
 $username = "root";
@@ -20,6 +21,7 @@ $result = $conn->query($sql);
 if ($result->num_rows > 0) {
     $datos = $result->fetch_assoc();
 
+    // Guardar en sesión
     $_SESSION['peso'] = $datos['peso'];
     $_SESSION['altura'] = $datos['altura'];
     $_SESSION['imc'] = $datos['imc'];
@@ -28,8 +30,18 @@ if ($result->num_rows > 0) {
     $_SESSION['nombre'] = $datos['nombre'];
     $_SESSION['apellido'] = $datos['apellido'];
 
+    echo json_encode([
+        'estado' => 'ok',
+        'nombre' => $datos['nombre'],
+        'apellido' => $datos['apellido'],
+        'peso' => $datos['peso'],
+        'altura' => $datos['altura'],
+        'imc' => $datos['imc'],
+        'obj_kcal' => $datos['obj_kcal'],
+        'obj_fisico' => $datos['obj_fisico']
+    ]);
 } else {
-    echo "Usuario no encontrado.";
+    echo json_encode(['estado' => 'usuario_no_encontrado']);
 }
 
 $conn->close();

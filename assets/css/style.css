@@ -354,6 +354,7 @@ body {
     font-size: 3.5rem;
     font-weight: bold;
     margin-bottom: 15px;
+    text-transform: capitalize;
 }
 
 .hero__text {
@@ -606,6 +607,16 @@ body {
 /*----------------------------
 ------------NAVBAR------------
 ------------------------------*/
+
+
+/*----------------------------
+------ESTILOS PARTICULARES----
+------------------------------*/
+
+#close-session {
+    color: darkred;
+}
+
 
 .navbar {
     display: flex;

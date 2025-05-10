@@ -18,7 +18,7 @@
             <nav class="navbar__links">
                 <a href="#">Info</a>
                 <a href="#nuestro-objetivo">Sobre Nosotros</a>
-                <a href="/Views/default/login.html">Login</a>
+                <a href="/Views/default/login.html" id="login-link">Login</a>
             </nav>
         </header>
         <!-- Sección Hero -->
@@ -77,5 +77,43 @@
                 </div>
         </section>
     </body>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch("../../assets/php/estado_sesion.php")
+                .then(response => response.json())
+                .then(data => {
+                    const navbar = document.querySelector(".navbar__links");
 
+                    if (data.sesion_iniciada) {
+                        const cerrarSesion = document.createElement("a");
+                        cerrarSesion.href = "/assets/php/logged-resources/cerrarsesion.php";
+                        cerrarSesion.id = "close-session";
+                        cerrarSesion.textContent = "Cerrar Sesión";
+                        navbar.appendChild(cerrarSesion);
+                        const loginLink = document.getElementById("login-link");
+                        if (loginLink) {
+                            loginLink.style.display = "none";
+                        }
+                    }
+                })
+                .catch(err => console.error("Error al verificar sesión:", err));
+        });
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch("../../assets/php/logged-resources/obtenerDatos.php")
+                .then(response => response.json())
+                .then(data => {
+                    const h1 = document.querySelector("h1");
+                    if (h1) {
+                        if (data.estado === "ok") {
+                            h1.textContent = `¡Hola, ${data.nombre} ${data.apellido}!`;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al obtener datos de sesión:", error);
+                });
+        });
+    </script>
 </html>
