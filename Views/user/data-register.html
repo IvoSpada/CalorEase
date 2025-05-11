@@ -4,7 +4,7 @@
 
     <head>
         <meta charset="utf-8">
-        <title>Multi Step Form | CodingNepal</title>
+        <title>Registro de datos</title>
         <link rel="stylesheet" href="../../assets/css/data-register-style.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
     </head>
@@ -35,7 +35,7 @@
                 </div>
             </div>
             <div class="form-outer">
-                <form action="../../assets/php/logged-resources/data-register.php" method="POST">
+                <form action="../../assets/php/logged-resources/data-register.php" method="POST" id="form-registro">
                     <!-- Paso 1 -->
                     <div class="page slide-page">
                         <div class="title">Información básica</div>
@@ -51,7 +51,7 @@
                             <button class="firstNext next">Siguiente</button>
                         </div>
                     </div>
-            
+
                     <!-- Paso 2 -->
                     <div class="page">
                         <div class="title">Datos físicos</div>
@@ -72,7 +72,7 @@
                             <button class="next-1 next">Siguiente</button>
                         </div>
                     </div>
-            
+
                     <!-- Paso 3 -->
                     <div class="page">
                         <div class="title">Objetivo físico</div>
@@ -93,7 +93,7 @@
                             <button class="next-2 next">Siguiente</button>
                         </div>
                     </div>
-            
+
                     <!-- Paso 4 -->
                     <div class="page">
                         <div class="title">Confirmar</div>
@@ -106,9 +106,10 @@
                         </div>
                     </div>
                 </form>
-            </div>            
             </div>
         </div>
-        <script src="../../assets/javascript/data-register-script.js"></script>
+        </div>
+        <script src="../../assets/javascript/data-register-script.js">
+        </script>
     </body>
 </html>

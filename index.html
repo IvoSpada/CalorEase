@@ -34,8 +34,9 @@
                     vida, creando un plan nutricional hecho a tu medida.
                 </p>
                 <div class="hero__buttons">
-                    <a href="/Views/default/register.html" class="btn btn--primary">Crear Cuenta</a>
-                    <a href="/Views/default/login.html" class="btn btn--secondary">Ya tengo una cuenta.</a>
+                    <a href="/Views/default/register.html" class="btn btn--primary" id="btn--primary">Crear Cuenta</a>
+                    <a href="/Views/default/login.html" class="btn btn--secondary" id="btn--secondary">Ya tengo una
+                        cuenta.</a>
                 </div>
             </div>
             <div class="hero__logo">
@@ -76,6 +77,19 @@
                     </form>
                 </div>
         </section>
+        <div id="registroExitosoPopup" class="popup">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <span class="close" onclick="cerrarPopupRegistro()">&times;</span>
+                </div>
+                <h2>¡Registro exitoso!</h2>
+                <p>Tu información fue guardada correctamente.</p>
+                <div class="popup-footer">
+                    <button onclick="cerrarPopupRegistro()">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
     </body>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -101,13 +115,20 @@
 
 
         document.addEventListener("DOMContentLoaded", () => {
-            fetch("../../assets/php/logged-resources/obtenerDatos.php")
+            fetch("assets/php/logged-resources/obtenerDatos.php")
                 .then(response => response.json())
                 .then(data => {
                     const h1 = document.querySelector("h1");
+                    const btn1 = document.getElementById("btn--primary");
+                    const btn2 = document.getElementById("btn--secondary");
                     if (h1) {
                         if (data.estado === "ok") {
                             h1.textContent = `¡Hola, ${data.nombre} ${data.apellido}!`;
+                            btn1.textContent = 'Ir al Panel';
+                            btn1.href = "../../assets/php/logged-resources/Dashboard.php";
+                            btn2.textContent = 'Configuración';
+                            btn2.href = '/views/user/micuenta.html';
+                            // console.log('todo ok');
                         }
                     }
                 })
@@ -115,5 +136,35 @@
                     console.error("Error al obtener datos de sesión:", error);
                 });
         });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (localStorage.getItem("registroExitoso") === "true") {
+                alert("¡Registro exitoso! Bienvenido a CalorEase.");
+                localStorage.removeItem("registroExitoso");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch("/assets/php/logged-resources/actualizarPopupMostrado.php")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.estado === "ok") {
+                        // Mostrar el popup
+                        document.getElementById("registroExitosoPopup").style.display = "block";
+                    } else if (data.estado === "ya_registrado") {
+                        console.log("El popup ya fue mostrado anteriormente.");
+                    } else {
+                        console.warn("Respuesta desconocida:", data);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al verificar si mostrar el popup:", error);
+                });
+        });
+
+        function cerrarPopupRegistro() {
+            document.getElementById("registroExitosoPopup").style.display = "none";
+        }
+
     </script>
 </html>
