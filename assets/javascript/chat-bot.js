@@ -1,8 +1,26 @@
-const sendButton = document.getElementById("sendButton");
-const inputText = document.getElementById("inputText");
-const responseDiv = document.getElementById("response");
+let nombreUsuario = "usuario"; // fallback
 
-const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada. Incluye en tu respuesta:
+// Obtener nombre del usuario al cargar
+fetch("http://calorease.com/assets/php/logged-resources/obtenerUsuario.php")
+  .then(res => {
+    if (!res.ok) throw new Error("No se pudo obtener el usuario");
+    return res.json();
+  })
+  .then(data => {
+    if (data.nombre) {
+      nombreUsuario = data.nombre;
+      console.log("👤 Nombre del usuario:", nombreUsuario);
+    }
+  })
+  .catch(err => {
+    console.error("⚠️ Error al obtener el nombre del usuario:", err.message);
+  });
+
+const sendButton = document.getElementById("sendButton");
+      const inputText = document.getElementById("inputText");
+      const responseDiv = document.getElementById("response");
+
+      const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada. Incluye en tu respuesta:
 
 - Sus valores nutricionales estimados (calorías, carbohidratos, grasas, proteínas).
 - Qué tan saludable es y en qué contextos puede ser adecuado o no.
@@ -13,76 +31,91 @@ const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguient
 
 Utiliza un lenguaje claro, profesional y accesible, como si estuvieras asesorando a un paciente: `;
 
-sendButton.addEventListener("click", async () => {
-  const userInput = inputText.value.trim();
-  if (!userInput) return;
-  responseDiv.innerHTML = "<em>Cargando...</em>";
+      sendButton.addEventListener("click", async () => {
+        const userInput = inputText.value.trim();
+        if (!userInput) return;
 
-  const prompt = prePrompt + userInput;
+        addMessage(userInput, "user");
+        inputText.value = "";
 
-  try {
-    const res = await fetch("http://localhost:3000/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+        addMessage("Cargando...", "bot");
 
-    if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
-    const data = await res.text();
+      const prompt = `Me llamo ${nombreUsuario}, ` + prePrompt + userInput;
 
-    const formatted = formatAsHTML(data);
-    responseDiv.innerHTML = formatted;
-  } catch (err) {
-    responseDiv.textContent = `Error: ${err.message}`;
-  }
-});
 
-function formatAsHTML(text) {
-  const escapeHTML = (str) =>
-    str.replace(
-      /[&<>]/g,
-      (tag) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-        }[tag])
-    );
+        try {
+          const res = await fetch("http://localhost:3000/api/gemini", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt }),
+          });
 
-  let escaped = escapeHTML(text);
+          if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+          const data = await res.text();
 
-  // Primero reemplaza **texto** por <strong><em>texto</em></strong>
-  escaped = escaped.replace(
-    /\*\*(?!\s)(.+?)(?!\s)\*\*/g,
-    "<strong><em>$1</em></strong>"
-  );
+          const formatted = formatAsHTML(data);
+          updateLastBotMessage(formatted);
+        } catch (err) {
+          updateLastBotMessage(`Error: ${err.message}`);
+        }
 
-  // Luego *texto* por <em>texto</em> (solo si no está envuelto en ** ya)
-  escaped = escaped.replace(/\*(?!\s)(.+?)(?!\s)\*/g, "<em>$1</em>");
+        responseDiv.scrollTop = responseDiv.scrollHeight;
+      });
 
-  const lines = escaped.split("\n");
-  let html = "";
-  let inList = false;
-
-  lines.forEach((line) => {
-    if (line.startsWith("* ")) {
-      if (!inList) {
-        html += "<ul>";
-        inList = true;
+      function addMessage(text, sender) {
+        const msg = document.createElement("div");
+        msg.className = `message ${sender}`;
+        msg.innerHTML = text;
+        responseDiv.appendChild(msg);
       }
-      const item = line.replace(/^\* /, "");
-      html += `<li>${item}</li>`;
-    } else {
-      if (inList) {
-        html += "</ul>";
-        inList = false;
-      }
-      if (line.trim() !== "") {
-        html += `<p>${line}</p>`;
-      }
-    }
-  });
 
-  if (inList) html += "</ul>";
-  return html;
-}
+      function updateLastBotMessage(html) {
+        const last = responseDiv.querySelector(".bot:last-child");
+        if (last) last.innerHTML = html;
+      }
+
+      function formatAsHTML(text) {
+        const escapeHTML = (str) =>
+          str.replace(
+            /[&<>]/g,
+            (tag) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+              }[tag])
+          );
+
+        let escaped = escapeHTML(text);
+
+        escaped = escaped.replace(
+          /\*\*(?!\s)(.+?)(?!\s)\*\*/g,
+          "<strong><em>$1</em></strong>"
+        );
+        escaped = escaped.replace(/\*(?!\s)(.+?)(?!\s)\*/g, "<em>$1</em>");
+
+        const lines = escaped.split("\n");
+        let html = "";
+        let inList = false;
+
+        lines.forEach((line) => {
+          if (line.startsWith("* ")) {
+            if (!inList) {
+              html += "<ul>";
+              inList = true;
+            }
+            html += `<li>${line.replace(/^\* /, "")}</li>`;
+          } else {
+            if (inList) {
+              html += "</ul>";
+              inList = false;
+            }
+            if (line.trim() !== "") {
+              html += `<p>${line}</p>`;
+            }
+          }
+        });
+
+        if (inList) html += "</ul>";
+        return html;
+      }
