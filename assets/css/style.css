@@ -114,15 +114,43 @@ body {
     align-items: center;
 }
 
+#searchPopup.show {
+    display: flex;
+}
+
 #searchPopup .popup-content {
     background: var(--color-fondo);
     padding: 20px;
     border-radius: 10px;
     max-width: 500px;
+    max-height: 80vh; /* ✅ Limita la altura */
+    overflow-y: auto; /* ✅ Scroll interno si es necesario */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    color: #333;
 }
 
-#searchPopup.show {
-    display: flex;
+/* Asegura que el contenido no se desborde ni pierda formato */
+#popup-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* Spinner animado */
+.spinner {
+    margin: 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 5px solid rgba(0,0,0,0.1);
+    border-top: 5px solid #555;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .hidden {

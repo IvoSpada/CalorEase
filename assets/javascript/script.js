@@ -73,29 +73,96 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!form || !input || !popup || !popupText || !popupClose) return;
     return;
   }
+/* 
+-----------------------------------
+peticion a gemini desde la barra de busqueda
+-------------------------------------------
+*/
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    const value = input.value.trim();
-    console.log("Form enviado, valor:", value);
-    if (value !== "") {
-      popupText.textContent = `Buscaste: "${value}"`;
-      popup.classList.remove("hidden");
-      popup.classList.add("show");
-      console.log("Popup mostrado");
+const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada, en un texto muy sintetizado, de no mas de 100 o 130 palabras. Incluye en tu respuesta:
+
+- Sus valores nutricionales estimados (calorías, carbohidratos, grasas, proteínas).
+- Qué tan saludable es y en qué contextos puede ser adecuado o no.
+- Qué beneficios aporta o qué precauciones deberían tomarse al consumirlo.
+- Si es una comida apta o no para celíacos, diabéticos o alguna otra enfermedad.
+
+Utiliza un lenguaje claro, profesional y accesible, como si estuvieras asesorando a un paciente, pero se extremadamente breve y conciso: `;
+
+function formatAsHTML(text) {
+  const escapeHTML = (str) =>
+    str.replace(/[&<>]/g, (tag) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[tag])
+    );
+
+  let escaped = escapeHTML(text);
+
+  escaped = escaped.replace(
+    /\*\*(?!\s)(.+?)(?!\s)\*\*/g,
+    "<strong><em>$1</em></strong>"
+  );
+
+  escaped = escaped.replace(/\*(?!\s)(.+?)(?!\s)\*/g, "<em>$1</em>");
+
+  const lines = escaped.split("\n");
+  let html = "";
+  let inList = false;
+
+  lines.forEach((line) => {
+    if (line.startsWith("* ")) {
+      if (!inList) {
+        html += "<ul>";
+        inList = true;
+      }
+      const item = line.replace(/^\* /, "");
+      html += `<li>${item}</li>`;
+    } else {
+      if (inList) {
+        html += "</ul>";
+        inList = false;
+      }
+      if (line.trim() !== "") {
+        html += `<p>${line}</p>`;
+      }
     }
   });
 
-  if (form && input && popup && popupText && popupClose) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault(); // Evita recargar
-      const value = input.value.trim();
-      if (value !== "") {
-        popupText.textContent = `Buscaste: "${value}"`;
-        popup.classList.remove("hidden");
-        popup.classList.add("show");
-      }
+  if (inList) html += "</ul>";
+  return html;
+}
+
+/* PREPROMPT ARRIBA */
+
+ form.addEventListener("submit", async function (e) {
+  e.preventDefault(); // Evita recargar la página
+  const value = input.value.trim();
+  if (value === "") return;
+
+  // Mostrar popup y spinner
+  popupText.innerHTML = `<div class="spinner"></div>`;
+  popup.classList.remove("hidden");
+  popup.classList.add("show");
+
+  const prompt = prePrompt + value;
+
+  try {
+    const res = await fetch("http://localhost:3000/api/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
     });
+
+    if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
+    const data = await res.text();
+
+   const formatted = formatAsHTML(data);
+    popupText.innerHTML = formatted;  // Aquí pones la respuesta formateada
+  } catch (err) {
+    popupText.textContent = `Error: ${err.message}`;
+  }
+});
+
+  if (form && input && popup && popupText && popupClose) {
+   
 
     popupClose.addEventListener("click", function () {
       popup.classList.remove("show");
