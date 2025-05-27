@@ -67,14 +67,21 @@
                     información nutricional sobre cualquier alimento al instante.
                 </p>
                 <div class="food-search-bar">
-                    <form action="#" method="POST">
+                    <form action="#" method="POST" id="searchForm">
                         <div class="search-container">
-                            <input type="text" placeholder="Buscar..." />
-                            <button type="submit" class="search-icon">
+                            <input type="text" placeholder="Buscar..." id="searchInput" />
+                            <button type="submit" class="search-icon" id="food-bar-button">
                                 <img src="/assets/img/busqueda-de-lupa.png" alt="Ícono de búsqueda">
                             </button>
                         </div>
                     </form>
+                </div>
+
+                <div id="searchPopup" class="popup hidden">
+                    <div class="popup-content">
+                        <span id="popup-close">&times;</span>
+                        <p id="popup-text"></p>
+                    </div>
                 </div>
         </section>
         <div id="registroExitosoPopup" class="popup">
@@ -89,82 +96,8 @@
                 </div>
             </div>
         </div>
-
     </body>
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            fetch("../../assets/php/estado_sesion.php")
-                .then(response => response.json())
-                .then(data => {
-                    const navbar = document.querySelector(".navbar__links");
-
-                    if (data.sesion_iniciada) {
-                        const cerrarSesion = document.createElement("a");
-                        cerrarSesion.href = "/assets/php/logged-resources/cerrarsesion.php";
-                        cerrarSesion.id = "close-session";
-                        cerrarSesion.textContent = "Cerrar Sesión";
-                        navbar.appendChild(cerrarSesion);
-                        const loginLink = document.getElementById("login-link");
-                        if (loginLink) {
-                            loginLink.style.display = "none";
-                        }
-                    }
-                })
-                .catch(err => console.error("Error al verificar sesión:", err));
-        });
-
-
-        document.addEventListener("DOMContentLoaded", () => {
-            fetch("assets/php/logged-resources/obtenerDatos.php")
-                .then(response => response.json())
-                .then(data => {
-                    const h1 = document.querySelector("h1");
-                    const btn1 = document.getElementById("btn--primary");
-                    const btn2 = document.getElementById("btn--secondary");
-                    if (h1) {
-                        if (data.estado === "ok") {
-                            h1.textContent = `¡Hola, ${data.nombre} ${data.apellido}!`;
-                            btn1.textContent = 'Ir al Panel';
-                            btn1.href = "../../assets/php/logged-resources/Dashboard.php";
-                            btn2.textContent = 'Configuración';
-                            btn2.href = '/views/user/micuenta.html';
-                            // console.log('todo ok');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error("Error al obtener datos de sesión:", error);
-                });
-        });
-
-        document.addEventListener("DOMContentLoaded", () => {
-            if (localStorage.getItem("registroExitoso") === "true") {
-                alert("¡Registro exitoso! Bienvenido a CalorEase.");
-                localStorage.removeItem("registroExitoso");
-            }
-        });
-
-        document.addEventListener("DOMContentLoaded", () => {
-            fetch("/assets/php/logged-resources/actualizarPopupMostrado.php")
-                .then(response => response.json())
-                .then(data => {
-                    if (data.estado === "ok") {
-                        // Mostrar el popup
-                        document.getElementById("registroExitosoPopup").style.display = "flex";
-                    } else if (data.estado === "ya_registrado") {
-                        console.log("El popup ya fue mostrado anteriormente.");
-                    } else {
-                        console.warn("Respuesta desconocida:", data);
-                    }
-                })
-                .catch(error => {
-                    console.error("Error al verificar si mostrar el popup:", error);
-                });
-        });
-
-        function cerrarPopupRegistro() {
-            document.getElementById("registroExitosoPopup").style.display = "none";
-        }
-
+    <script src="/assets/javascript/script.js">
     </script>
+
 </html>

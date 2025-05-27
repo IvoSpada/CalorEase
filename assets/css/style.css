@@ -101,6 +101,33 @@ body {
     cursor: pointer;
 }
 
+#searchPopup {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.6);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+#searchPopup .popup-content {
+    background: var(--color-fondo);
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 500px;
+}
+
+#searchPopup.show {
+    display: flex;
+}
+
+.hidden {
+    display: none !important;
+}
 
 .flexallcenter {
     display: flex;
