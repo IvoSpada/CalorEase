@@ -79,7 +79,7 @@ peticion a gemini desde la barra de busqueda
 -------------------------------------------
 */
 
-const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada, en un texto muy sintetizado, de no mas de 100 o 130 palabras. Incluye en tu respuesta:
+const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada, en un texto muy sintetizado, de no mas de 50-60 palabras. Incluye en tu respuesta:
 
 - Sus valores nutricionales estimados (calorías, carbohidratos, grasas, proteínas).
 - Qué tan saludable es y en qué contextos puede ser adecuado o no.
