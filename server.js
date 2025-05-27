@@ -1,18 +1,14 @@
-// server.js
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
 
 // Cargar variables de entorno
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 // Instanciar express
 const app = express();
-// Habilitar CORS
 app.use(cors());
-
-// Middleware para JSON
 app.use(express.json());
 require("dotenv").config();
 
@@ -29,10 +25,7 @@ app.post("/api/gemini", async (req, res) => {
   console.log("   Payload recibido:", req.body);
 
   const textoUsuario = req.body.prompt || "<sin prompt>";
-  const instruccion =
-    `Devuelve exclusivamente un objeto JSON con las claves "calorías", ` +
-    `"carbohidratos", "grasas" y "proteínas" (valores numéricos en gramos o kcal) ` +
-    `de la siguiente comida y su porción: ${textoUsuario}`;
+  const instruccion = req.body.prompt || "<sin prompt>";
 
   const bodyToSend = {
     contents: [{ parts: [{ text: instruccion }] }],
@@ -40,7 +33,6 @@ app.post("/api/gemini", async (req, res) => {
   console.log("   Body para Gemini:", JSON.stringify(bodyToSend));
 
   try {
-    // import dinámico de node-fetch (v3+)
     const fetch = (await import("node-fetch")).default;
     const apiRes = await fetch(`${BASE_URL}?key=${API_KEY}`, {
       method: "POST",
@@ -58,38 +50,18 @@ app.post("/api/gemini", async (req, res) => {
         .json({ error: `Gemini API error ${apiRes.status}`, details: rawText });
     }
 
-    // Parsear la respuesta del LLM
     const jsonLLM = JSON.parse(rawText);
     const candidate = jsonLLM.candidates?.[0];
     let respuestaRaw = candidate.content.parts.map((p) => p.text).join("");
 
-    console.log("✅ Raw LLM JSON con backticks:", respuestaRaw);
+    console.log("✅ Respuesta cruda:", respuestaRaw);
 
-    // ————— Limpiar triple backticks y etiquetas —————
-    // 1. Elimina ```json y ```
-    // 2. Elimina cualquier espacio extra al inicio o final
+    // Opcional: limpieza básica de backticks si Gemini los incluye
     const cleaned = respuestaRaw
-      .replace(/```json/g, "") // quita ```json
-      .replace(/```/g, "") // quita ```
+      .replace(/```(?:json)?/g, "")
       .trim();
 
-    console.log("🔄 JSON limpio a parsear:", cleaned);
-
-    // Ahora parseamos
-    let nutricion;
-    try {
-      nutricion = JSON.parse(cleaned);
-    } catch (parseErr) {
-      console.error("❌ Error parseando JSON limpio:", parseErr);
-      return res.status(500).json({
-        error: "Respuesta no es JSON válido tras limpieza",
-        raw: respuestaRaw,
-        cleaned,
-      });
-    }
-
-    // Devolvemos el objeto final
-    res.json(nutricion);
+    res.send(cleaned); // ← enviamos texto plano, no intentamos parsear JSON
   } catch (err) {
     console.error("🔥 Excepción en /api/gemini:", err);
     res.status(500).json({ error: err.message });
