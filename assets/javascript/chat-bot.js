@@ -1,3 +1,7 @@
+function scrollToBottom() {
+  responseDiv.scrollTop = responseDiv.scrollHeight;
+}
+
 let nombreUsuario = "usuario"; // fallback
 
 // Obtener nombre del usuario al cargar
@@ -37,6 +41,7 @@ Utiliza un lenguaje claro, profesional y accesible, como si estuvieras asesorand
 
         addMessage(userInput, "user");
         inputText.value = "";
+        scrollToBottom(); // 👈 SOLO AQUÍ
 
         addMessage("Cargando...", "bot");
 
@@ -59,7 +64,7 @@ Utiliza un lenguaje claro, profesional y accesible, como si estuvieras asesorand
           updateLastBotMessage(`Error: ${err.message}`);
         }
 
-        responseDiv.scrollTop = responseDiv.scrollHeight;
+        // responseDiv.scrollTop = responseDiv.scrollHeight;
       });
 
       function addMessage(text, sender) {
