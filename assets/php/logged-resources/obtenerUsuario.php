@@ -13,20 +13,36 @@ if ($conn->connect_error) {
     die("Error en conexión: " . $conn->connect_error);
 }
 
-$id_usuario = $_SESSION['id_usuario'];
+try {
+    if (!isset($_SESSION['id_usuario'])) {
+        throw new Exception("ID de usuario no disponible en la sesion.");
+    } else {
+        $id_usuario = $_SESSION['id_usuario'];
+    }
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    $sql = "SELECT nombre FROM usuario WHERE id_usuario = $id_usuario";
+    $result = $conn->query($sql);
 
-$sql = "SELECT nombre FROM usuario WHERE id_usuario = $id_usuario";
-$result = $conn->query($sql);
+    $nombre_usuario = "Desconocido";
+    if ($result && $result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $nombre_usuario = $row['nombre'];
+        $data = [
+            "nombre" => $nombre_usuario
+        ];
+    } else {
+        $data = [
+            "nombre" => "usuario"
+        ];
+    }
 
-$nombre_usuario = "Desconocido";
-if ($result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $nombre_usuario = $row['nombre'];
-    $data = [
-        "nombre" => $nombre_usuario
-    ];
-    $json = json_encode(value: $data);
-    echo $json;
+    echo json_encode($data);
+} catch (Exception $e) {
+    http_response_code(500); // Código de error del servidor
+    echo json_encode([
+        "error" => "Error al obtener el nombre de usuario",
+        "detalle" => $e->getMessage()
+    ]);
 }
 
 $conn->close();

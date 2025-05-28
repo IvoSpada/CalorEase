@@ -45,7 +45,7 @@ if ($contraseñalog == $pass) {
         $_SESSION['id_usuario'] = $id;
 
         // Redirigir a página loggedON
-        header("Location: ../../../Views/user/loggedON.php");
+        header("Location: ../../../");
         exit;
     } else {
         echo "No se pudo obtener el ID del usuario.";
