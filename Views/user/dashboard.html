@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CalorEase - Dashboard</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", sans-serif;
+        background-color: #0d1117;
+        color: white;
+      }
+      nav {
+        background-color: #1f2937;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .nav-left,
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        text-transform: capitalize;
+      }
+      .dropdown {
+        position: relative;
+      }
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #374151;
+        padding: 5px 0;
+        border-radius: 5px;
+        z-index: 1000;
+      }
+      .dropdown:hover .dropdown-content {
+        display: block;
+      }
+      .dropdown-content a {
+        display: block;
+        padding: 5px 15px;
+        color: white;
+        text-decoration: none;
+      }
+      .dropdown-content a:hover {
+        background-color: #4b5563;
+      }
+      .profile {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background-color: white;
+      }
+      .container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 30px;
+      }
+      .imc-section {
+        text-align: center;
+      }
+      .imc-section h1 {
+        font-size: 36px;
+      }
+      .imc-section .bar {
+        width: 200px;
+        height: 20px;
+        background: linear-gradient(to right, green, red);
+        margin: 10px auto;
+        border-radius: 10px;
+      }
+      .kcal-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .kcal-circle {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: conic-gradient(hotpink 0% 0%, transparent 0% 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        margin: 20px 0;
+        text-align: center;
+        border: 5px solid #3b82f6;
+      }
+      .kcal-circle span {
+        font-size: 24px;
+      }
+      .btn {
+        border: 2px solid #3b82f6;
+        background: transparent;
+        color: #3b82f6;
+        padding: 10px 20px;
+        margin: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .btn:hover {
+        background-color: #3b82f6;
+        color: white;
+      }
+      .macros {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .macro {
+        background: radial-gradient(circle at top left, #1f2937, #111827);
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-size: 12px;
+        position: relative;
+        color: white;
+      }
+      .macro::after {
+        content: "i";
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 50%;
+        width: 15px;
+        height: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-left">
+        <div class="dropdown">
+          <span style="cursor: pointer">Objetivos &#x25BC;</span>
+          <div class="dropdown-content">
+            <a href="#">Semanales</a>
+            <a href="#">Diarios</a>
+          </div>
+        </div>
+        <a href="#">Comidas Favoritas</a>
+        <a href="#">Comunidad</a>
+        <span id="nombre-usuario"></span>
+      </div>
+      <div class="nav-right">
+        <div class="profile"></div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="imc-section">
+        <h1>IMC</h1>
+        <p>(Índice Masa Corporal)</p>
+        <div class="bar"></div>
+      </div>
+
+      <div class="kcal-section">
+        <div class="kcal-circle">
+          <span>0kcal</span>
+          <small>Objetivo: 2000kcal</small>
+        </div>
+        <div>
+          <button class="btn" id="btn-agregar-comida">Agregar comida</button>
+          <button class="btn">Ver mis comidas</button>
+        </div>
+      </div>
+
+      <div class="macros">
+        <div class="macro">
+          Proteína<br />
+          0gr<br />
+          Objetivo: 100gr
+        </div>
+        <div class="macro">
+          Carbohidratos<br />
+          0gr<br />
+          Objetivo: 150gr
+        </div>
+        <div class="macro">
+          Grasas<br />
+          0gr<br />
+          Objetivo: 40gr
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      id="modalComida"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background-color: #0d1117;
+          padding: 30px;
+          border-radius: 15px;
+          width: 300px;
+          text-align: center;
+        "
+      >
+        <h2 style="color: white">Agregar Comida</h2>
+        <input
+          type="text"
+          placeholder="Comida:"
+          style="
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 10px;
+          "
+        />
+        <input
+          type="text"
+          placeholder="Cantidad:"
+          style="
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 20px;
+          "
+        />
+        <button class="btn" onclick="agregarALista()">Agregar a lista</button>
+        <button class="btn" onclick="verLista()">Ver lista</button><br /><br />
+        <button class="btn" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const nombre = localStorage.getItem("nombre");
+        const apellido = localStorage.getItem("apellido");
+        const nombreUsuarioSpan = document.getElementById("nombre-usuario");
+
+        if (nombre && apellido && nombreUsuarioSpan) {
+          nombreUsuarioSpan.textContent = `${nombre} ${apellido}`;
+          nombreUsuarioSpan.style.marginLeft = "10px";
+          nombreUsuarioSpan.style.fontWeight = "bold";
+        }
+
+        console.log("ID Usuario:", localStorage.getItem("id_usuario"));
+        console.log("Nombre:", nombre);
+        console.log("Apellido:", apellido);
+        console.log("Peso:", localStorage.getItem("peso"));
+        console.log("Altura:", localStorage.getItem("altura"));
+        console.log("IMC:", localStorage.getItem("imc"));
+        console.log("Objetivo Calórico:", localStorage.getItem("obj_kcal"));
+        console.log("Objetivo Físico:", localStorage.getItem("obj_fisico"));
+        console.log("Registro Confirmado:", localStorage.getItem("registro_confirmado"));
+
+        const modal = document.getElementById("modalComida");
+        const btnAbrir = document.getElementById("btn-agregar-comida");
+
+        if (btnAbrir && modal) {
+          btnAbrir.addEventListener("click", () => {
+            modal.style.display = "flex";
+          });
+        }
+
+        window.cerrarModal = function () {
+          modal.style.display = "none";
+        };
+
+        window.agregarALista = function () {
+          alert("Comida agregada (funcionalidad pendiente)");
+        };
+
+        window.verLista = function () {
+          alert("Ver lista (funcionalidad pendiente)");
+        };
+      });
+    </script>
+  </body>
+</html>

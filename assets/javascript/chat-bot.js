@@ -2,7 +2,7 @@ function scrollToBottom() {
   responseDiv.scrollTop = responseDiv.scrollHeight;
 }
 
-let nombreUsuario = "anon"; // fallback
+let nombreUsuario = "usuario"; // fallback
 
 // Obtener nombre del usuario al cargar
 fetch("http://calorease.com/assets/php/logged-resources/obtenerUsuario.php")

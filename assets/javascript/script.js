@@ -18,22 +18,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Obtener datos del usuario logueado ---
   fetch("assets/php/logged-resources/obtenerDatos.php")
-    .then((response) => response.json())
-    .then((data) => {
-      const h1 = document.querySelector("h1");
-      const btn1 = document.getElementById("btn--primary");
-      const btn2 = document.getElementById("btn--secondary");
-      if (h1 && data.estado === "ok") {
-        h1.textContent = `¡Hola, ${data.nombre} ${data.apellido}!`;
-        btn1.textContent = "Ir al Panel";
-        btn1.href = "../../assets/php/logged-resources/Dashboard.php";
-        btn2.textContent = "Configuración";
-        btn2.href = "/views/user/micuenta.html";
-      }
-    })
-    .catch((error) =>
-      console.error("Error al obtener datos de sesión:", error)
-    );
+  .then((response) => response.json())
+  .then((data) => {
+    const h1 = document.querySelector("h1");
+    const btn1 = document.getElementById("btn--primary");
+    const btn2 = document.getElementById("btn--secondary");
+
+    if (h1 && data.estado === "ok") {
+      // Mostrar nombre en h1
+      h1.textContent = `¡Hola, ${data.nombre} ${data.apellido}!`;
+
+      // Modificar botones
+      btn1.textContent = "Ir al Panel";
+      btn1.href = "/views/user/Dashboard.html";
+      btn2.textContent = "Configuración";
+      btn2.href = "/views/user/micuenta.html";
+
+      // Guardar en localStorage
+      localStorage.setItem("id_usuario", data.id_usuario);
+      localStorage.setItem("nombre", data.nombre);
+      localStorage.setItem("apellido", data.apellido);
+      localStorage.setItem("peso", data.peso);
+      localStorage.setItem("altura", data.altura);
+      localStorage.setItem("imc", data.imc);
+      localStorage.setItem("obj_kcal", data.obj_kcal);
+      localStorage.setItem("obj_fisico", data.obj_fisico);
+      localStorage.setItem("registro_confirmado", data.registro_confirmado);
+    }
+    console.log(data.imc);
+  })
+  .catch((error) =>
+    console.error("Error al obtener datos de sesión:", error)
+  );
+
 
   // --- Mostrar alerta por registro exitoso ---
   if (localStorage.getItem("registroExitoso") === "true") {
