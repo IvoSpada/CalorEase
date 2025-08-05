@@ -453,7 +453,7 @@ body {
 }
 
 .hero__logo img {
-    max-width: 100%;
+    max-width: 100rem;
 }
 
 .hero__title {
@@ -725,6 +725,7 @@ body {
 
 
 .navbar {
+
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -733,6 +734,11 @@ body {
     background-color: var(--color-secundario);
     width: 100%;
     margin-top: 0;
+    padding-left: 0%;
+    position: fixed;
+    top: 0;
+     z-index: 1001;
+
 }
 
 .navbar__logo {
