@@ -5,8 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CalorEase - Dashboard</title>
     <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+    <style>
+      #lista-comidas {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f2f2f2;
+        border-radius: 8px;
+        display: none;
+      }
+
+      .comida-item {
+        padding: 8px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid #ccc;
+      }
+    </style>
   </head>
-  <!-- ...head igual -->
   <body>
     <nav>
       <div class="nav-left">
@@ -41,7 +55,7 @@
         </div>
         <div>
           <button class="btn" id="btn-agregar-comida">Agregar comida</button>
-          <button class="btn">Ver mis comidas</button>
+          <button class="btn" id="btn-ver-comidas">Ver mis comidas</button>
         </div>
       </div>
 
@@ -62,10 +76,15 @@
           Objetivo: <span id="objetivo-grasas">40</span>gr
         </div>
       </div>
+
+      <div id="lista-comidas">
+        <h3>Mis Comidas Registradas</h3>
+        <div id="contenedor-comidas"></div>
+      </div>
     </div>
 
     <!-- Modal -->
-    <div id="modalComida">
+    <div id="modalComida" style="display: none">
       <div class="modal-content">
         <h2>Agregar Comida</h2>
         <input type="text" placeholder="Comida:" />
