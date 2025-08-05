@@ -18,8 +18,8 @@ body {
   max-width: 600px;
   height: 100vh;
   background: white;
-  border-left: 1px solid #ddd;
-  border-right: 1px solid #ddd;
+  border-left: 0px solid #ddd;
+  border-right: 0px solid #ddd;
 }
 
 h2 {
