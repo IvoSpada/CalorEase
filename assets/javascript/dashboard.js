@@ -8,31 +8,18 @@ document.addEventListener("DOMContentLoaded", () => {
     nombreUsuarioSpan.textContent = `${nombre} ${apellido}`;
     nombreUsuarioSpan.style.marginLeft = "10px";
     nombreUsuarioSpan.style.fontWeight = "bold";
-  } else {
-    console.warn(
-      "⚠️ No se encontraron datos de nombre o apellido en localStorage."
-    );
   }
 
-  // Mostrar ID de sesión (para comparación con localStorage)
   fetch("/assets/php/logged-resources/obtenerDatos.php")
     .then((res) => res.json())
     .then((sessionData) => {
       console.log("🧠 SESSION desde PHP:", sessionData);
       console.log("💾 ID desde localStorage:", idUsuario);
-      if (
-        sessionData.id_usuario &&
-        idUsuario &&
-        sessionData.id_usuario !== idUsuario
-      ) {
-        console.warn("❗ Diferencia entre sesión PHP y localStorage.");
-      }
     })
     .catch((err) => {
       console.error("❌ No se pudo obtener la sesión desde PHP:", err);
     });
 
-  // Mostrar IMC
   const imc = localStorage.getItem("imc");
   if (imc) {
     const valorIMC = document.getElementById("valor-imc");
@@ -44,24 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (imcFloat < 25) barraIMC.style.background = "green";
     else if (imcFloat < 30) barraIMC.style.background = "orange";
     else barraIMC.style.background = "red";
-  } else {
-    console.warn("⚠️ IMC no encontrado en localStorage.");
   }
 
-  // Objetivo calórico
   const objKcal = localStorage.getItem("obj_kcal");
   if (objKcal) {
     document.getElementById("objetivo-kcal").textContent = objKcal;
-  } else {
-    console.warn("⚠️ Objetivo calórico no encontrado.");
   }
 
-  // Objetivo de macros (hardcodeado por ahora)
   document.getElementById("objetivo-proteinas").textContent = "100";
   document.getElementById("objetivo-carbs").textContent = "150";
   document.getElementById("objetivo-grasas").textContent = "40";
 
-  // Modal lógica
   const modal = document.getElementById("modalComida");
   const btnAbrir = document.getElementById("btn-agregar-comida");
   if (btnAbrir && modal) {
@@ -82,55 +62,77 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Ver lista (funcionalidad pendiente)");
   };
 
-  // Botón "Ver mis comidas"
   const btnVerComidas = document.getElementById("btn-ver-comidas");
   const listaComidas = document.getElementById("lista-comidas");
   const contenedorComidas = document.getElementById("contenedor-comidas");
+  let comidasYaCargadas = false;
 
-  btnVerComidas.addEventListener("click", () => {
+  function cargarComidasUsuario() {
     if (!idUsuario) {
       alert("⚠️ ID de usuario no encontrado en localStorage.");
       return;
     }
 
-    fetch(
-      `/assets/php/logged-resources/obtenercomidausuario.php?id_usuario=${idUsuario}`
-    )
+    contenedorComidas.innerHTML = '<div class="spinner">⏳ Cargando comidas...</div>';
+    listaComidas.style.display = "block";
+
+    fetch(`/assets/php/logged-resources/obtenercomidausuario.php?id_usuario=${idUsuario}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
-        return res.json();
+        return res.text(); // 👈 leemos como texto para debug
       })
-      .then((comidas) => {
-        console.log("✅ Comidas obtenidas:", comidas);
+      .then((text) => {
+        console.log("📦 Respuesta cruda del servidor:", text);
 
-        if (comidas.error) {
-          contenedorComidas.innerHTML = `<p style="color:red;"><strong>Error:</strong> ${comidas.error}</p>`;
-        } else if (!Array.isArray(comidas) || comidas.length === 0) {
-          contenedorComidas.innerHTML = "<p>No hay comidas registradas.</p>";
-        } else {
-          contenedorComidas.innerHTML = comidas
-            .map((c) => {
-              return `
-                <div class="comida-item">
-                  <strong>${c.Nombre_Comida}</strong><br />
-                  Fecha: ${c.Fecha_Consumo}<br />
-                  Cantidad: ${c.Cantidad}<br />
-                  Calorías: ${c.Calorias}<br />
-                  Proteínas: ${c.Proteinas}g<br />
-                  Carbs: ${c.Carbohidratos}g<br />
-                  Grasas: ${c.Grasas}g
-                </div>
-              `;
-            })
-            .join("");
+        let comidas;
+        try {
+          comidas = JSON.parse(text);
+        } catch (err) {
+          throw new Error("La respuesta no es un JSON válido.");
         }
 
-        listaComidas.style.display = "block";
+        if (!Array.isArray(comidas) || comidas.length === 0) {
+          contenedorComidas.innerHTML = `<p style="color:gray;">No se encontraron comidas registradas.</p>`;
+          return;
+        }
+
+        contenedorComidas.innerHTML = comidas
+          .map((c) => {
+            const platosHTML = c.Platos && c.Platos.length > 0
+              ? `<ul>${c.Platos.map(p => `<li>${p.Nombre_Plato} (x${p.Cantidad_Plato})</li>`).join("")}</ul>`
+              : `<p style="color:gray;">Sin platos registrados</p>`;
+
+            return `
+              <div class="comida-item">
+                <strong>${c.Nombre_Comida}</strong><br />
+                Fecha: ${c.Fecha_Consumo}<br />
+                Cantidad: ${c.Cantidad}<br />
+                Calorías: ${c.Calorias} kcal<br />
+                Proteínas: ${c.Proteinas}g<br />
+                Carbs: ${c.Carbohidratos}g<br />
+                Grasas: ${c.Grasas}g
+                <div style="margin-top:5px;"><u>Platos:</u>${platosHTML}</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        comidasYaCargadas = true;
       })
       .catch((err) => {
         console.error("❌ Error al obtener las comidas:", err);
         contenedorComidas.innerHTML = `<p style="color:red;">Ocurrió un error al cargar tus comidas.</p>`;
-        listaComidas.style.display = "block";
       });
+  }
+
+  btnVerComidas.addEventListener("click", () => {
+    if (!comidasYaCargadas) {
+      cargarComidasUsuario();
+    } else {
+      listaComidas.style.display = listaComidas.style.display === "block" ? "none" : "block";
+    }
   });
+
+  // Cargar automáticamente al entrar
+  cargarComidasUsuario();
 });
