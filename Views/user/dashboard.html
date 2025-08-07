@@ -6,23 +6,60 @@
     <title>CalorEase - Dashboard</title>
     <link rel="stylesheet" href="../../assets/css/dashboard.css" />
     <style>
-      #lista-comidas {
-        margin-top: 20px;
-        padding: 10px;
-        background: #3e4bff;
-        border-radius: 8px;
+      .modal-comidas {
         display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        justify-content: center;
+        align-items: center;
       }
 
-      .comida-item {
+      .modal-contenido {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 600px;
+        position: relative;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .modal-contenido h3 {
+        margin-top: 0;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #333;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
         padding: 8px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid #ccc;
+        text-align: left;
       }
 
-      .spinner {
-        text-align: center;
-        padding: 10px;
+      th {
+        background: #f0f0f0;
       }
     </style>
   </head>
@@ -81,14 +118,31 @@
           Objetivo: <span id="objetivo-grasas">40</span>gr
         </div>
       </div>
+    </div>
 
-      <div id="lista-comidas">
+    <!-- 🧾 Modal de lista de comidas -->
+    <div class="modal-comidas" id="popup-comidas">
+      <div class="modal-contenido">
+        <button class="modal-close" onclick="cerrarPopupComidas()">✖</button>
         <h3>Mis Comidas Registradas</h3>
-        <div id="contenedor-comidas"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Plato</th>
+              <th>Fecha</th>
+              <th>Cantidad</th>
+              <th>Calorías</th>
+              <th>Proteínas</th>
+              <th>Carbs</th>
+              <th>Grasas</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-comidas"></tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal agregar comida (ya existente) -->
     <div id="modalComida" style="display: none">
       <div class="modal-content">
         <h2>Agregar Comida</h2>
