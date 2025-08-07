@@ -1,83 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CalorEase</title>
-    <link rel="stylesheet" href="/assets/css/style.css" />
-    <link rel="stylesheet" href="/assets/css/normalize.css" />
-  </head>
-  <body>
-    <!-- Sección Hero -->
-    <header class="navbar">
-      <div class="navbar__logo">
-        <img src="/assets/img/logo2.png" alt="Logo" />
-      </div>
-      <nav class="navbar__links">
-        <a href="#">Info</a>
-        <a href="#">Sobre Nosotros</a>
-        <a href="#">Login</a>
-      </nav>
-    </header>
-    <!-- Sección Hero -->
-    <section class="hero">
-      <img
-        src="/assets/img/lechuga-italiana.png"
-        alt="lechuga-romana-product"
-        class="float-image-top-right"
-      />
-      <img
-        src="/assets/img/fruits-AI.png"
-        alt="lechuga-romana-product"
-        class="float-image-bottom-right"
-      />
-      <div class="hero__content">
-        <h1 class="hero__title">CalorEase</h1>
-        <p class="hero__text">
-          En CalorEase, utilizamos inteligencia artificial para brindarte
-          recomendaciones precisas de macronutrientes y calorías basadas en tus
-          objetivos personales. Nuestra plataforma se adapta a tu estilo de
-          vida, creando un plan nutricional hecho a tu medida.
-        </p>
-        <div class="hero__buttons">
-          <a href="#" class="btn btn--primary">Crear Cuenta</a>
-          <a href="#" class="btn btn--secondary">Ya tengo una cuenta.</a>
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CalorEase</title>
+        <link rel="stylesheet" href="/assets/css/style.css" />
+        <link rel="stylesheet" href="/assets/css/normalize.css" />
+    </head>
+
+    <body>
+        <!-- Sección Hero -->
+        <header class="navbar">
+            <div class="navbar__logo">
+               
+                <a href="index.html"> <img src="/assets/img/logoonly.png" alt="Logo" /></a>
+            </div>
+            <nav class="navbar__links">
+                <a href="/Views/user/api-chat.html">Chatea con nuestra IA!</a>
+                <a href="#nuestro-objetivo">Sobre Nosotros</a>
+                <a href="/Views/default/login.html" id="login-link">Login</a>
+            </nav>
+        </header>
+        <!-- Sección Hero -->
+        <section class="hero">
+            <img src="/assets/img/lechuga-italiana.png" alt="lechuga-romana-product" class="float-image-top-right" />
+            <img src="/assets/img/fruits-AI.png" alt="lechuga-romana-product" class="float-image-bottom-right" />
+            <div class="hero__content">
+                <h1 class="hero__title">CalorEase</h1>
+                <p class="hero__text">
+                    En CalorEase, utilizamos inteligencia artificial para brindarte
+                    recomendaciones precisas de macronutrientes y calorías basadas en tus
+                    objetivos personales. Nuestra plataforma se adapta a tu estilo de
+                    vida, creando un plan nutricional hecho a tu medida.
+                </p>
+                <div class="hero__buttons">
+                    <a href="/Views/default/register.html" class="btn btn--primary" id="btn--primary">Crear Cuenta</a>
+                    <a href="/Views/default/login.html" class="btn btn--secondary" id="btn--secondary">Ya tengo una
+                        cuenta.</a>
+                </div>
+            </div>
+            <div class="hero__logo">
+                <img src="/assets/img/Logo_finale.png" alt="Calorie & Macro Calculator Logo" />
+            </div>
+        </section>
+        <section class="nuestro-objetivo" id="nuestro-objetivo">
+            <div class="nuestro-objetivo-img">
+                <img src="/assets/img/our_mission.jpg" alt="our_mission" />
+            </div>
+            <div class="nuestro-objetivo-info">
+                <h2>Nuestro Objetivo</h2>
+                <h3>Control de Peso Individualizado y Sostenible</h3>
+                <p>
+                    Nuestra misión es empoderar a cualquiera para alcanzar su peso deseado
+                    a través de una pérdida de peso individualizada y sostenible, porque
+                    imaginamos un mundo donde todos puedan lograr sus objetivos de pérdida
+                    de peso, llevando a una mejor salud y felicidad.
+                </p>
+            </div>
+        </section>
+        <section class="food-info">
+            <div class="food-details">
+                <h3>¿Quieres saber sobre algún alimento?</h3>
+                <p>
+                    ¿Tienes curiosidad sobre las calorías y la nutrición en tus alimentos
+                    favoritos? Usa nuestra herramienta de búsqueda para encontrar
+                    información nutricional sobre cualquier alimento al instante.
+                </p>
+                <div class="food-search-bar">
+                    <form action="#" method="POST" id="searchForm">
+                        <div class="search-container">
+                            <input type="text" placeholder="Buscar..." id="searchInput" />
+                            <button type="submit" class="search-icon" id="food-bar-button">
+                                <img src="/assets/img/busqueda-de-lupa.png" alt="Ícono de búsqueda">
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="searchPopup" class="popup hidden">
+                    <div class="popup-content">
+                        <span id="popup-close">&times;</span>
+                        <p id="popup-text"></p>
+                    </div>
+                </div>
+        </section>
+        <div id="registroExitosoPopup" class="popup">
+            <div class="popup-content">
+                <div class="popup-header">
+                    <span class="close" onclick="cerrarPopupRegistro()">&times;</span>
+                </div>
+                <h2>¡Registro exitoso!</h2>
+                <p>Tu información fue guardada correctamente.</p>
+                <div class="popup-footer">
+                    <button onclick="cerrarPopupRegistro()">Aceptar</button>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="hero__logo">
-        <img
-          src="/assets/img/logo penege.png"
-          alt="Calorie & Macro Calculator Logo"
-        />
-      </div>
-    </section>
-    <section class="nuestro-objetivo">
-      <div class="nuestro-objetivo-img">
-        <img src="/assets/img/our_mission.jpg" alt="our_mission" />
-      </div>
-      <div class="nuestro-objetivo-info">
-        <h2>Nuestro Objetivo</h2>
-        <h3>Pérdida de Peso Individualizada y Sostenible</h3>
-        <p>
-          Nuestra misión es empoderar a cualquiera para alcanzar su peso deseado
-          a través de una pérdida de peso individualizada y sostenible, porque
-          imaginamos un mundo donde todos puedan lograr sus objetivos de pérdida
-          de peso, llevando a una mejor salud y felicidad.
-        </p>
-      </div>
-    </section>
-    <section class="food-info">
-      <div class="food-details">
-        <h3>¿Quieres saber sobre algún alimento?</h3>
-        <p>
-          ¿Tienes curiosidad sobre las calorías y la nutrición en tus alimentos
-          favoritos? Usa nuestra herramienta de búsqueda para encontrar
-          información nutricional sobre cualquier alimento al instante.
-        </p>
-        <div class="food-search-bar">
-          <form action="#" method="POST"><input type="text" /></form>
-        </div>
-      </div>
-    </section>
-  </body>
+    </body>
+    <script src="/assets/javascript/script.js">
+    </script>
+
 </html>

@@ -1,16 +1,21 @@
 <?php
-session_start();
+$host = 'localhost';
+$db = 'calorease'; // Nombre correcto de tu base
+$user = 'root';
+$pass = ''; // o tu contraseña real
+$charset = 'utf8mb4';
 
-$DATABASE_HOST = 'localhost';
-$DATABASE_USER = 'root';
-$DATABASE_PASS = '';
-$DATABASE_NAME = 'bim-database';
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+];
 
-$tabla_db = 'users';
-
-$conexion = mysqli_connect($DATABASE_HOST, $DATABASE_USER, $DATABASE_PASS, $DATABASE_NAME);
-
-
-if (mysqli_connect_error()) {
-  exit('Fallo en la conexión de MySQL:' . mysqli_connect_error());
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Error de conexión a la base de datos.']);
+    exit;
 }
+?>
