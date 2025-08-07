@@ -96,3 +96,29 @@ function verLista() {
 function agregarALista() {
   alert("Función agregarALista aún no implementada");
 }
+
+/*------------------------------------------------
+---------FUNCION AGREGAR COMIDAS CON IA-----------
+-------------------------------------------------- */
+document
+  .getElementById("btn-agregar-comida")
+  .addEventListener("click", function () {
+    document.getElementById("popup-agregar-comida").style.display = "flex";
+  });
+
+document
+  .getElementById("btn-modo-manual")
+  .addEventListener("click", function () {
+    const campos = document.getElementById("campos-manuales");
+    campos.style.display = campos.style.display === "none" ? "block" : "none";
+  });
+
+function cerrarPopupAgregarComida() {
+  document.getElementById("popup-agregar-comida").style.display = "none";
+  document.getElementById("descripcion-comida").value = "";
+  document.getElementById("campos-manuales").style.display = "none";
+  document.getElementById("input-calorias").value = "";
+  document.getElementById("input-proteinas").value = "";
+  document.getElementById("input-carbohidratos").value = "";
+  document.getElementById("input-grasas").value = "";
+}
