@@ -167,26 +167,40 @@
         <div id="popup-agregar-comida" class="popup" style="display: none;">
             <div class="popup-contenido">
                 <h2>Agregar nueva comida</h2>
-                <p>Escribe qué comiste. Esta información será analizada por una IA para estimar sus valores
-                    nutricionales.</p>
+                <p>Describe lo que comiste. Será analizado por una IA para estimar sus valores nutricionales, o puedes
+                    ingresarlos manualmente.</p>
 
-                <textarea id="descripcion-comida" rows="4"
+                <label for="input-comida">Descripción de la comida</label>
+                <textarea id="input-comida" rows="4"
                     placeholder="Ejemplo: Me comí una hamburguesa con papas fritas y una Coca-Cola."></textarea>
 
-                <button id="btn-modo-manual">Ingresar datos manualmente</button>
+                <button id="btn-modo-manual" type="button">Ingresar datos manualmente</button>
 
                 <div id="campos-manuales" style="display: none; margin-top: 10px;">
-                    <input type="number" placeholder="Calorías (kcal)" id="input-calorias" />
-                    <input type="number" placeholder="Proteínas (g)" id="input-proteinas" />
-                    <input type="number" placeholder="Carbohidratos (g)" id="input-carbohidratos" />
-                    <input type="number" placeholder="Grasas (g)" id="input-grasas" />
+                    <label for="input-nombre-comida">Nombre del plato</label>
+                    <input type="text" id="input-nombre-comida" placeholder="Ej: Ensalada César" />
+
+                    <label for="input-calorias">Calorías (kcal)</label>
+                    <input type="number" id="input-calorias" placeholder="Ej: 250" />
+
+                    <label for="input-proteinas">Proteínas (g)</label>
+                    <input type="number" id="input-proteinas" placeholder="Ej: 12.5" />
+
+                    <label for="input-carbohidratos">Carbohidratos (g)</label>
+                    <input type="number" id="input-carbohidratos" placeholder="Ej: 30.0" />
+
+                    <label for="input-grasas">Grasas (g)</label>
+                    <input type="number" id="input-grasas" placeholder="Ej: 8.0" />
                 </div>
 
                 <div style="margin-top: 10px;">
-                    <button id="btn-enviar-comida">Enviar</button>
+                    <button id="btn-enviar-ia" type="button">Enviar</button>
                     <button onclick="cerrarPopupAgregarComida()">Cancelar</button>
                 </div>
+
+                <div id="mensaje-respuesta" style="margin-top: 10px;"></div>
             </div>
+            <div id="respuesta-ia"></div>
         </div>
 
         <script src="../../assets/javascript/dashboard.js"></script>
