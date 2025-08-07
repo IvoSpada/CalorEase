@@ -41,12 +41,12 @@ if ($contraseñalog == $pass) {
         $row_id = $result_id->fetch_assoc();
         $id = $row_id['id_usuario'];
         session_start();
-         // Guardar ID de usuario en sesión
-    $_SESSION['id_usuario'] = $id;
-    
-    // Redirigir a página loggedON
-    header("Location: loggedON.php");
-    exit;
+        // Guardar ID de usuario en sesión
+        $_SESSION['id_usuario'] = $id;
+
+        // Redirigir a página loggedON
+        header("Location: ../../../");
+        exit;
     } else {
         echo "No se pudo obtener el ID del usuario.";
     }

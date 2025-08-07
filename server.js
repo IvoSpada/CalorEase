@@ -1,55 +1,72 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
 
+// Cargar variables de entorno
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+// Instanciar express
 const app = express();
-const port = 3000;
-
-//peticiones JSON
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
+require("dotenv").config();
 
-//instancia
-const genAI = new GoogleGenerativeAI("AIzaSyDgdLETOQ7NbyJJcA0jzUgNy2k05UBjUNU");
+app.use(express.static(__dirname));
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash-lite",
-});
+console.log("🔑 GEMINI_API_KEY loaded?", !!process.env.GEMINI_API_KEY);
 
-const generationConfig = {
-  temperature: 0,
-  topP: 0.95,
-  topK: 40,
-  maxOutputTokens: 8192,
-  responseMimeType: "text/plain",
-};
+const MODEL = "gemini-2.0-flash";
+const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const API_KEY = process.env.GEMINI_API_KEY;
 
-// Ruta
-app.post("/generate", async (req, res) => {
-  const inputText = req.body.text;
+app.post("/api/gemini", async (req, res) => {
+  console.log("▶️  /api/gemini llamado");
+  console.log("   Payload recibido:", req.body);
 
-  const parts = [
-    {
-      text: "input: sos un asistente de nutricion y te vamos a nombrar alimentos, deberias imaginartelo en tamaño promedio/mediano, cuando un alimento sigue de un NUMERO por ejemplo 'manzana2' es la cantidad del alimento osea multiplicador. SOLO TIENES PERMITIDO RESPONDER EL SIGUIENTE FORMATO, SIN SALTEAR UN ELEMENTO y incluso poniendo 1 decimal(EN CASO QUE ALGUNO SEA NULO PONER 0): [nombre alimento]|[calorias]|[proteinas]|[carbohidratos]|[grasas]|[cantidad]",
-    },
-    { text: "output: " },
-    { text: `input: ${inputText}` },
-    { text: "output: " },
-  ];
+  const textoUsuario = req.body.prompt || "<sin prompt>";
+  const instruccion = req.body.prompt || "<sin prompt>";
+
+  const bodyToSend = {
+    contents: [{ parts: [{ text: instruccion }] }],
+  };
+  console.log("   Body para Gemini:", JSON.stringify(bodyToSend));
 
   try {
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-      generationConfig,
+    const fetch = (await import("node-fetch")).default;
+    const apiRes = await fetch(`${BASE_URL}?key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyToSend),
     });
-    res.json({ response: result.response.text() });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error generando la respuesta" });
+
+    const rawText = await apiRes.text();
+    console.log(`   Gemini respondió status=${apiRes.status}`);
+    console.log("   Cuerpo crudo:", rawText.slice(0, 200) + "…");
+
+    if (!apiRes.ok) {
+      return res
+        .status(apiRes.status)
+        .json({ error: `Gemini API error ${apiRes.status}`, details: rawText });
+    }
+
+    const jsonLLM = JSON.parse(rawText);
+    const candidate = jsonLLM.candidates?.[0];
+    let respuestaRaw = candidate.content.parts.map((p) => p.text).join("");
+
+    console.log("✅ Respuesta cruda:", respuestaRaw);
+
+    // Opcional: limpieza básica de backticks si Gemini los incluye
+    const cleaned = respuestaRaw
+      .replace(/```(?:json)?/g, "")
+      .trim();
+
+    res.send(cleaned); // ← enviamos texto plano, no intentamos parsear JSON
+  } catch (err) {
+    console.error("🔥 Excepción en /api/gemini:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Iniciar el servidorrrr
-app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor en http://localhost:${PORT}`));
