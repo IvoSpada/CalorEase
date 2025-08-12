@@ -57,7 +57,6 @@ function cargarComidasUsuario() {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${comida.Nombre_Comida}</td>
-          <td>${comida.Fecha_Consumo}</td>
           <td>${comida.Platos}</td>
           <td>${comida.Calorias}</td>
           <td>${comida.Proteinas}</td>
@@ -143,7 +142,7 @@ document
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `Analiza esta comida y devolveme un EXCUSIVAMENTE UN JSON con los siguientes campos: Fecha_Consumo (actual), Platos (sera la cantidad especificada, no los platos que contiene la comida, si no se especifica será 1), Nombre_Comida, Calorias, Proteinas, Carbohidratos y Grasas. Solo devuelve el JSON sin explicaciones, ni textos anteriores, ni contextos. Comida: ${inputTexto}`,
+          prompt: `Analiza esta comida y devolveme un EXCUSIVAMENTE UN JSON con los siguientes campos: Platos (sera la cantidad especificada, no los platos que contiene la comida, si no se especifica será 1), Nombre_Comida, Calorias, Proteinas, Carbohidratos y Grasas. Solo devuelve el JSON sin explicaciones, ni textos anteriores, ni contextos. Comida: ${inputTexto}`,
         }),
       });
 
@@ -165,7 +164,7 @@ document
       <h3>Resultado del análisis</h3>
       <ul>
         <li><strong>Nombre:</strong> ${data.Nombre_Comida}</li>
-        <li><strong>Fecha:</strong> ${data.Fecha_Consumo}</li>
+        
         <li><strong>Platos:</strong> ${data.Platos}</li>
         <li><strong>Calorías:</strong> ${data.Calorias}</li>
         <li><strong>Proteínas:</strong> ${data.Proteinas}</li>
@@ -174,15 +173,32 @@ document
       </ul>
     `;
 
-      // 🔄 Acá podrías hacer un POST a PHP para guardar en la base de datos
-      // await fetch("../../assets/php/logged-resources/guardarComida.php", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(data)
-      // });
+      // 🔄 POST a PHP para guardar en la base de datos
 
-      // Después podrías refrescar la tabla
-      // cargarComidasUsuario();
+      try {
+        const phpResponse = await fetch(
+          "../../assets/php/AI-resources/insertarComidaAI.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          }
+        );
+        console.log(
+          "📡 Estado respuesta PHP:",
+          phpResponse.status,
+          phpResponse.statusText
+        );
+
+        if (!phpResponse.ok) {
+          throw new Error(`Error en el PHP: ${phpResponse.status}`);
+        }
+
+        const phpResult = await phpResponse.text();
+        console.log("✅ Respuesta de PHP:", phpResult);
+      } catch (phpError) {
+        console.error("❌ Error al enviar datos a PHP:", phpError);
+      }
     } catch (error) {
       console.error("Error al enviar a Gemini:", error);
       document.getElementById("respuesta-ia").innerHTML =
