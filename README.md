@@ -54,7 +54,7 @@ Editar
 
 ## 🚧 Pendientes
 
-- [ ] Crear `agregarComida.php` para guardar comidas en la base de datos.
+- [ ] Poner `restricciones` para la seleccion de comidas, de todas a las del usuario asignadas, tanto en la ingesta diaria como parte de la dieta.
 - [ ] Validaciones en la subida manual de datos.
 - [ ] Mejoras visuales y adaptación móvil.
 - [ ] Autenticación de usuarios.
