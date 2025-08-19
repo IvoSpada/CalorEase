@@ -50,6 +50,7 @@ body {
     line-height: 2;
     background-color: var(--color-fondo);
     height: 100vh;
+    padding-top: 12rem;
 }
 
 /*POP-UP*/
@@ -417,11 +418,13 @@ body {
     overflow: hidden;
     /* Evita que la imagen sobresalga */
     padding: 0 6rem;
+    backdrop-filter:blur(5px);
+    padding-bottom: 10rem;
 }
 
 .hero__lechuga {
     position: absolute;
-    top: 0;
+    top: 2rem;
     right: 0;
     width: 150px;
     /* Ajusta según sea necesario */
@@ -446,15 +449,19 @@ body {
 }
 
 .hero__logo {
-    flex: 35%;
+    flex: 1 1 35%;
     position: relative;
-    /* This will be the reference for the absolute positioning */
     z-index: 1000;
+    padding: 1rem;
 }
 
 .hero__logo img {
-    max-width: 100rem;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    padding-top: 14rem;
 }
+
 
 .hero__title {
     font-size: 3.5rem;

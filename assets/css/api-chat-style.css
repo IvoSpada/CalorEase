@@ -1,129 +1,150 @@
-:root {
-  /* Fuentes */
-  --fuente-heading: Arial, sans-serif;
-  --fuente-parrafos: Arial, sans-serif;
-
-  /* Colores */
-  --color-secundario: #0e1621;
-  --color-texto: #ffffff;
-  --color-primario: #007bff;
-  --color-primario-hover: #0056b3;
-  --color-input: #2c3e50;
-  --color-fondo: #1c2b3a;
-  --color-boton: #007bff;
-  --color-boton-hover: #0056b3;
-}
-
+/* ==== Reset básico ==== */
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+  font-family: "Inter", sans-serif;
 }
 
 body {
-  margin: 0;
-  font-family: var(--fuente-parrafos);
-  height: 100vh;
+  background-color: #0e1621;
+  color: #f1f5f9;
   display: flex;
   justify-content: center;
-  background: var(--color-fondo);
-  color: var(--color-texto);
-}
-
-#chatContainer {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 600px;
+  align-items: center;
   height: 100vh;
-  background: var(--color-secundario);
-  border-left: 1px solid #222;
-  border-right: 1px solid #222;
+  overflow: hidden; /* evita que el body se alargue */
 }
 
-h2 {
-  text-align: center;
-  background: var(--color-primario);
-  color: var(--color-texto);
-  margin: 0;
-  padding: 15px;
-}
-
-#response {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
+/* ==== Contenedor principal ==== */
+#chatContainer {
+  width: 95%;
+  max-width: 600px;
+  height: 90vh; /* altura máxima fija para el chat */
+  background: #1e293b;
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  overflow: hidden;
 }
 
+/* ==== Título ==== */
+.titulo {
+  background: #0f172a;
+  color: #38bdf8;
+  text-align: center;
+  padding: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ==== Zona de respuestas ==== */
+#response {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto; /* habilita scroll vertical */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 #1e293b;
+  max-height: calc(90vh - 180px); 
+  /* calcula altura dinámica restando título + input */
+}
+
+/* ==== Mensajes ==== */
 .message {
-  padding: 10px 15px;
+  padding: 0.8rem 1rem;
   border-radius: 12px;
   max-width: 80%;
-  white-space: pre-wrap;
-  color: var(--color-texto);
+  word-wrap: break-word;
+  line-height: 1.4;
 }
 
-.user {
+.user-message {
+  background: #38bdf8;
+  color: #0e1621;
   align-self: flex-end;
-  background: #375a7f; /* azul oscuro elegante para usuario */
+  border-bottom-right-radius: 0;
 }
 
-.bot {
+.bot-message {
+  background: #334155;
+  color: #e2e8f0;
   align-self: flex-start;
-  background: #2a3b4c; /* gris oscuro para bot */
+  border-bottom-left-radius: 0;
 }
 
+/* ==== Input area ==== */
 #inputArea {
   display: flex;
-  padding: 10px;
-  background: var(--color-secundario);
-  border-top: 1px solid #222;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 #inputText {
-  flex: 1;
   resize: none;
-  padding: 10px;
-  font-size: 1em;
-  background: var(--color-input);
-  color: var(--color-texto);
-  border: 1px solid #444;
-  border-radius: 5px;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 1rem;
+  height: 70px;
+  transition: border 0.2s;
 }
 
+#inputText:focus {
+  border: 2px solid #38bdf8;
+}
+
+/* ==== Botón enviar ==== */
 #sendButton {
-  margin-left: 10px;
-  padding: 10px 15px;
-  font-size: 1em;
-  background: var(--color-boton);
-  color: var(--color-texto);
+  background: #38bdf8;
+  color: #0e1621;
+  padding: 0.8rem;
+  font-weight: 600;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 #sendButton:hover {
-  background: var(--color-boton-hover);
+  background: #0ea5e9;
 }
 
+/* ==== Botón volver ==== */
 #backButtonContainer {
-  text-align: right;
-  padding: 10px 20px;
-  border-top: 1px solid #222;
-  background: var(--color-secundario);
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 #backButton {
   text-decoration: none;
-  background: #444;
-  color: var(--color-texto);
-  padding: 8px 14px;
-  border-radius: 5px;
-  font-size: 0.9em;
-  transition: background 0.3s;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  transition: color 0.2s;
 }
 
 #backButton:hover {
-  background: #555;
+  color: #38bdf8;
+}
+
+/* ==== Scroll ==== */
+#response::-webkit-scrollbar {
+  width: 6px;
+}
+#response::-webkit-scrollbar-track {
+  background: transparent;
+}
+#response::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 10px;
 }
