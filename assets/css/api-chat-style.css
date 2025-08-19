@@ -1,4 +1,4 @@
-* {
+/* * {
   box-sizing: border-box;
 }
 
@@ -106,4 +106,154 @@ h2 {
 
 #backButton:hover {
   background: #bbb;
+} */
+/* ==== Reset básico ==== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  background-color: #0e1621;
+  color: #f1f5f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden; /* evita que el body se alargue */
+}
+
+/* ==== Contenedor principal ==== */
+#chatContainer {
+  width: 95%;
+  max-width: 600px;
+  height: 90vh; /* altura máxima fija para el chat */
+  background: #1e293b;
+  border-radius: 18px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ==== Título ==== */
+.titulo {
+  background: #0f172a;
+  color: #38bdf8;
+  text-align: center;
+  padding: 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ==== Zona de respuestas ==== */
+#response {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto; /* habilita scroll vertical */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 #1e293b;
+  max-height: calc(90vh - 180px); 
+  /* calcula altura dinámica restando título + input */
+}
+
+/* ==== Mensajes ==== */
+.message {
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.user-message {
+  background: #38bdf8;
+  color: #0e1621;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.bot-message {
+  background: #334155;
+  color: #e2e8f0;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+/* ==== Input area ==== */
+#inputArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #0f172a;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#inputText {
+  resize: none;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 1rem;
+  height: 70px;
+  transition: border 0.2s;
+}
+
+#inputText:focus {
+  border: 2px solid #38bdf8;
+}
+
+/* ==== Botón enviar ==== */
+#sendButton {
+  background: #38bdf8;
+  color: #0e1621;
+  padding: 0.8rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#sendButton:hover {
+  background: #0ea5e9;
+}
+
+/* ==== Botón volver ==== */
+#backButtonContainer {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+#backButton {
+  text-decoration: none;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+#backButton:hover {
+  color: #38bdf8;
+}
+
+/* ==== Scroll ==== */
+#response::-webkit-scrollbar {
+  width: 6px;
+}
+#response::-webkit-scrollbar-track {
+  background: transparent;
+}
+#response::-webkit-scrollbar-thumb {
+  background: #38bdf8;
+  border-radius: 10px;
 }

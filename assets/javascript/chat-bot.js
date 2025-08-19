@@ -188,4 +188,48 @@ function formatAsHTML(text) {
 
   if (inList) html += "</ul>";
   return html;
+
+  
 }
+// Enviar con Enter (Shift+Enter = salto de línea)
+(function () {
+  function ready(fn) {
+    if (document.readyState !== "loading") fn();
+    else document.addEventListener("DOMContentLoaded", fn);
+  }
+
+  ready(function () {
+    const input = document.getElementById("inputText");
+    const sendBtn = document.getElementById("sendButton");
+
+    if (!input || !sendBtn) {
+      console.error("No encontré #inputText o #sendButton en el DOM.");
+      return;
+    }
+
+    input.addEventListener("keydown", function (e) {
+      const isEnter = e.key === "Enter" || e.keyCode === 13;
+
+      // Enter sin modificadores => enviar
+      if (
+        isEnter &&
+        !e.shiftKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        !e.isComposing // evita conflictos con IME
+      ) {
+        e.preventDefault();
+
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Si tu lógica de envío es una función, podés llamarla acá:
+        // if (typeof sendMessage === "function") return sendMessage(text);
+
+        // Por defecto, simula el click del botón "Enviar"
+        sendBtn.click();
+      }
+    });
+  });
+})();
