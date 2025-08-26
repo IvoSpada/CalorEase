@@ -35,7 +35,7 @@ const sendButton = document.getElementById("sendButton");
 const inputText = document.getElementById("inputText");
 const responseDiv = document.getElementById("response");
 
-const prePrompt = `Actúa como un nutricionista profesional. Analiza el siguiente alimento y su porción aproximada. Incluye en tu respuesta:
+const prePrompt = `Actúa como un nutricionista profesional. si es que hay, analiza el siguiente alimento y su porción aproximada. Incluye en tu respuesta:
 
 - Sus valores nutricionales estimados (calorías, carbohidratos, grasas, proteínas).
 - Qué tan saludable es y en qué contextos puede ser adecuado o no.

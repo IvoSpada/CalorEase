@@ -30,10 +30,6 @@ CalorEase/
 ├── .env
 └── README.md
 
-markdown
-Copiar
-Editar
-
 ## ⚙️ Tecnologías utilizadas
 
 - **Frontend**: HTML5, CSS3, JavaScript
