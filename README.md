@@ -1,74 +1,73 @@
-# CalorEase 🍽️🔥
+# Welcome to your Lovable project
 
-**CalorEase** es una plataforma web para el seguimiento nutricional personalizado, que permite al usuario registrar sus comidas, obtener sus valores nutricionales estimados mediante IA, y visualizar un resumen diario de su alimentación.
+## Project info
 
-## 🧠 Características principales
+**URL**: https://lovable.dev/projects/b48a92cd-59cb-4883-984d-5b44d98de50f
 
-- Registro de comidas por texto libre (analizado por Gemini AI).
-- Opción manual para ingresar valores nutricionales personalizados.
-- Visualización diaria de comidas y valores totales.
-- Backend en PHP + MySQL.
-- Frontend en JavaScript, HTML, CSS.
-- Integración con la API de Gemini mediante Node.js.
+## How can I edit this code?
 
-## 🏗️ Estructura del Proyecto
+There are several ways of editing your application.
 
-CalorEase/
-│
-├── index.html
-├── dashboard.html
-├── dashboard.js
-├── estilos/
-│ └── estilo.css
-├── assets/
-│ └── php/
-│ ├── conexion.php
-│ └── logged-resources/
-│ ├── obtenerComidaUsuario.php
-│ └── agregarComida.php (⚠️ PENDIENTE)
-├── server.js
-├── .env
-└── README.md
+**Use Lovable**
 
-## ⚙️ Tecnologías utilizadas
+Simply visit the [Lovable Project](https://lovable.dev/projects/b48a92cd-59cb-4883-984d-5b44d98de50f) and start prompting.
 
-- **Frontend**: HTML5, CSS3, JavaScript
-- **Backend PHP**: Conexión a MySQL mediante `mysqli`
-- **Base de datos**: MySQL
-- **IA**: API de Gemini (Google AI)
-- **Servidor IA**: Node.js con Express
-- **Entorno local**: WAMP (Windows), entorno LAMP compatible
+Changes made via Lovable will be committed automatically to this repo.
 
-## 📤 Flujo de la app
+**Use your preferred IDE**
 
-1. El usuario ingresa una comida.
-2. Puede optar por ingresar manualmente o dejar que la IA la analice.
-3. El frontend hace una petición `POST` a `/api/gemini` en el backend Node.js.
-4. La IA responde con los valores nutricionales en JSON.
-5. (Próximamente) Se envía ese JSON a un script PHP que guarda los datos en MySQL.
-6. Los datos se muestran en el dashboard del usuario, agrupados por fecha.
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-## 🚧 Pendientes
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-- [ ] Poner `restricciones` para la seleccion de comidas, de todas a las del usuario asignadas, tanto en la ingesta diaria como parte de la dieta.
-- [ ] Validaciones en la subida manual de datos.
-- [ ] Mejoras visuales y adaptación móvil.
-- [ ] Autenticación de usuarios.
-- [ ] Mostrar gráficos nutricionales diarios.
+Follow these steps:
 
-## 📦 Ejecución local
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-1. Clonar el repositorio.
-2. Configurar `.env` con tu API key de Gemini:
-    ```
-    GEMINI_API_KEY=TU_API_KEY_AQUI
-    ```
-3. Levantar el servidor Node.js:
-    ```
-    node server.js
-    ```
-4. Acceder vía navegador a `http://localhost` o `http://localhost:3000`.
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-## 👤 Autor
+# Step 3: Install the necessary dependencies.
+npm i
 
-**CalorEase** – Proyecto final en desarrollo para plataforma de nutrición inteligente.
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
+
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/b48a92cd-59cb-4883-984d-5b44d98de50f) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

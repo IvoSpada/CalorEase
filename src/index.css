@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CalorEase Design System - Modern nutrition tracking platform */
+@layer base {
+  :root {
+    /* CalorEase Brand Colors */
+    --background: 211 100% 96%; /* Light blue-gray background (#f7f9fc) */
+    --foreground: 205 100% 8%; /* Dark navy blue (#0d1b2a) */
+
+    /* Brand Primary - Navy Blue */
+    --primary: 205 100% 8%; /* #0d1b2a */
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 205 50% 15%; /* Lighter navy for hover states */
+
+    /* Brand Accent - Green */
+    --accent: 165 94% 44%; /* #06d6a0 */
+    --accent-foreground: 205 100% 8%;
+    --accent-soft: 165 94% 85%; /* Light green for backgrounds */
+
+    /* Semantic Colors */
+    --secondary: 210 40% 95%;
+    --secondary-foreground: 205 100% 8%;
+
+    --muted: 210 40% 93%;
+    --muted-foreground: 205 25% 45%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 205 100% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 205 100% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 40% 88%;
+    --input: 210 40% 90%;
+    --ring: 165 94% 44%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(205, 100%, 8%), hsl(205, 50%, 15%));
+    --gradient-accent: linear-gradient(135deg, hsl(165, 94%, 44%), hsl(165, 94%, 35%));
+    --gradient-hero: linear-gradient(135deg, hsl(205, 100%, 8%) 0%, hsl(205, 50%, 15%) 50%, hsl(165, 94%, 44%) 100%);
+
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(205, 100%, 8%, 0.15);
+    --shadow-glow: 0 0 40px hsl(165, 94%, 44%, 0.25);
+    --shadow-card: 0 4px 20px -4px hsl(205, 100%, 8%, 0.1);
+
+    /* Spacing & Layout */
+    --radius: 0.75rem;
+    --container-max: 1200px;
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    --background: 205 100% 5%;
+    --foreground: 0 0% 95%;
+    --card: 205 50% 8%;
+    --card-foreground: 0 0% 95%;
+    --primary: 165 94% 44%;
+    --primary-foreground: 205 100% 8%;
+    --accent: 165 94% 35%;
+    --accent-foreground: 0 0% 95%;
+    --muted: 205 25% 12%;
+    --muted-foreground: 205 15% 65%;
+    --border: 205 25% 15%;
+    --input: 205 25% 15%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-['Inter',sans-serif];
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Hero Section Styles */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* Animation Classes */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.5s ease-out forwards;
+  }
+
+  /* Text Animation */
+  .typing-animation {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+  }
+
+  /* Hover Effects */
+  .hover-scale {
+    transition: var(--transition-smooth);
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+@layer utilities {
+  /* Custom Keyframes */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes fade-up {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-in {
+    0% { opacity: 0; transform: translateX(-30px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  @keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: hsl(var(--accent)); }
+  }
+
+  /* Scroll Animations */
+  @keyframes scroll-fade {
+    0% { opacity: 0; transform: translateY(50px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
