@@ -109,12 +109,14 @@ Utiliza un lenguaje claro, profesional, accesible y resumido como si estuvieras 
 
       const prompt = `${prePrompt}${userMessage}`;
 
-      // --- Fetch al backend LAN ---
-      const res = await fetch("http://192.168.0.41:5000/api/gemini", {
+      // --- Fetch al backend LAN dinámico ---
+        const LAN_IP = import.meta.env.VITE_LAN_IP;
+
+        const res = await fetch(`http://${LAN_IP}:5000/api/gemini`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
-      });
+        });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 

@@ -63,8 +63,10 @@ app.post("/api/gemini", async (req, res) => {
 });
 
 // ⚡ Escuchar en LAN (0.0.0.0) y en el puerto 5000
+const LAN_IP = process.env.VITE_LAN_IP || "localhost"; // fallback
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor escuchando en http://0.0.0.0:${PORT}`);
-  console.log(`🌐 LAN disponible en http://192.168.0.41:${PORT}`);
+  console.log(`🌐 LAN disponible en http://${LAN_IP}:${PORT}`);
 });
