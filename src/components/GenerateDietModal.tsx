@@ -15,7 +15,7 @@ import type { Dieta, ComidaDieta } from "../types";
 // Tipo para el plan generado por la IA
 type PlanGenerado = {
   dias: {
-    fecha: string;
+    fecha: string; // "YYYY-MM-DD"
     comidas: Omit<ComidaDieta, 'id' | 'dieta_id'>[];
   }[];
 };
@@ -23,6 +23,7 @@ type PlanGenerado = {
 interface GenerateDietModalProps {
   isOpen: boolean;
   onClose: () => void;
+  // Callback para refrescar el dashboard
   onDietaCreada: (dieta: Dieta) => void;
 }
 
@@ -51,12 +52,13 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
   // Reset al cerrar
   useEffect(() => {
     if (!isOpen) {
+      // No reseteamos las fechas para conveniencia
+      // setFechaInicio(getToday());
+      // setFechaFin(getIn7Days());
       setPlanGenerado(null);
       setIsGenerating(false);
       setIsSaving(false);
-      // Opcional: resetear fechas y prompt si se desea
-      // setFechaInicio(getToday());
-      // setFechaFin(getIn7Days());
+      // No reseteamos el prompt para que el usuario pueda refinar
       // setPromptUsuario("3 comidas al día...");
     }
   }, [isOpen]);
@@ -79,6 +81,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
 
       Devuelve SOLAMENTE un objeto JSON válido. El objeto debe tener una clave raíz "dias".
       "dias" debe ser un array de objetos, uno por cada día desde la fecha de inicio hasta la de fin.
+      
       Cada objeto de día debe tener:
       1. "fecha": (string en formato "YYYY-MM-DD")
       2. "comidas": (un array de objetos de comida)
@@ -156,10 +159,13 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
         origen: "IA",
         estado: "activa", // Marcarla como activa por defecto
       };
+      
       const dietaRes = await createDieta(dietaPayload);
 
-      if (!dietaRes.ok || !dietaRes.data?.id) {
-        // --- INICIO DE LA MODIFICACIÓN ---
+      // --- INICIO DE LA MODIFICACIÓN (FIX #2) ---
+      // El backend devuelve { "dieta": {...}, "status": 201 }
+      // Comprobamos la ruta correcta al id.
+      if (!dietaRes.ok || !dietaRes.data?.dieta?.id) {
         // Mejorar el mensaje de error para mostrar los errores de validación de Laravel
         const validationErrors = (dietaRes.data as any)?.errors;
         let errorMessage = "No se pudo crear el registro de la dieta";
@@ -178,11 +184,13 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
         }
         
         throw new Error(errorMessage);
-        // --- FIN DE LA MODIFICACIÓN ---
       }
       
-      const nuevaDieta = dietaRes.data as Dieta;
+      // Extraer la dieta de la respuesta anidada
+      const nuevaDieta = dietaRes.data.dieta as Dieta;
       const dietaId = nuevaDieta.id;
+      // --- FIN DE LA MODIFICACIÓN (FIX #2) ---
+
 
       // 2. Crear todas las ComidasDieta (en paralelo)
       const comidasPromesas: Promise<any>[] = [];
@@ -190,7 +198,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
         dia.comidas.forEach(comida => {
           const comidaPayload: Partial<ComidaDieta> = {
             dieta_id: dietaId,
-            fecha: dia.fecha,
+            fecha: dia.fecha, // La fecha viene del día
             tipo: comida.tipo,
             descripcion: comida.descripcion,
             calorias: comida.calorias,
@@ -226,6 +234,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
   };
 
   return (
+    // Contenedor del Modal con altura fija y flex
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col">
         <DialogHeader>
@@ -233,6 +242,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
         </DialogHeader>
 
         {/* CONTENEDOR PRINCIPAL (con flex-1) */}
+        {/* min-h-0 es crucial para que flex-1 funcione dentro de otro flexbox */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
           
           {/* Columna de Opciones */}
@@ -306,10 +316,12 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
             </div>
             
             {/* BOTÓN DE GUARDAR (fuera del scroll) */}
+            {/* --- INICIO DE LA MODIFICACIÓN (FIX #3) --- */}
             <Button onClick={handleSaveDiet} disabled={!planGenerado || isSaving || isGenerating} className="w-full" variant="hero">
               {isSaving ? <Loader2 className="animate-spin mr-2" /> : <CheckCircle className="mr-2" />}
               {isSaving ? "Guardando..." : "Guardar Dieta y Comidas"}
             </Button>
+            {/* --- FIN DE LA MODIFICACIÓN (FIX #3) --- */}
           </div>
         </div>
         

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Importado
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Importado
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: "login" | "register";
-  onSubmit: (payload: any) => Promise<{ ok: boolean; error?: any }>;
+  onSubmit: (payload: any) => Promise<{ ok: boolean; error?: any } | void>;
   onSuccess?: () => void;
 }
 
@@ -25,18 +25,16 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
     peso: "",
     altura: "",
     edad: "",
-    objetivo: "mantener", // Valor por defecto
+    objetivo: "mantener",
   });
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Manejador solo para Inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Nuevo manejador para el Select
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -45,19 +43,15 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
   };
 
   const validateRegister = () => {
-    // Validación completa
     if (!formData.nombre || !formData.email || !formData.password || !formData.confirmPassword) {
       toast({ title: "Error", description: "Todos los campos son obligatorios", variant: "destructive" });
       return false;
     }
-    
-    // === VALIDACIÓN AÑADIDA ===
-    // Comprobar los campos requeridos por el backend
+
     if (!formData.peso || !formData.altura || !formData.edad) {
       toast({ title: "Error", description: "Peso, altura y edad son obligatorios", variant: "destructive" });
       return false;
     }
-    // ===========================
 
     if (formData.password !== formData.confirmPassword) {
       toast({ title: "Error", description: "Las contraseñas no coinciden", variant: "destructive" });
@@ -67,28 +61,26 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true); // Restaurado
+    setIsLoading(true);
     try {
       let payload: any = {};
 
       if (type === "register") {
         if (!validateRegister()) {
-          setIsLoading(false); // Restaurado
+          setIsLoading(false);
           return;
         }
         payload = {
-          // Datos completos
           nombre: formData.nombre.trim(),
           email: formData.email.trim(),
           password: formData.password,
           password_confirmation: formData.confirmPassword,
-          peso: Number(formData.peso) || null, // Convertir a null si está vacío
-          altura: Number(formData.altura) || null, // Convertir a null si está vacío
-          edad: Number(formData.edad) || null, // Convertir a null si está vacío
+          peso: Number(formData.peso) || null,
+          altura: Number(formData.altura) || null,
+          edad: Number(formData.edad) || null,
           objetivo: formData.objetivo,
         };
       } else {
-        // Validación de login
         if (!formData.email || !formData.password) {
           toast({ title: "Error", description: "Email y contraseña son obligatorios", variant: "destructive" });
           setIsLoading(false);
@@ -100,12 +92,10 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
         };
       }
 
-      // Llamamos a la función onSubmit que se pasa como prop
-      // (Se elimina el comentario "// ... existing code ...")
       const result = await onSubmit(payload);
 
-      if (result.ok) {
-        // Toast de éxito
+      // Si el padre no retorna nada (void) consideramos éxito.
+      if (!result || result.ok) {
         toast({
           title: type === "login" ? "Inicio de sesión exitoso" : "Registro exitoso",
           description: "Bienvenido",
@@ -114,22 +104,26 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
         onClose();
         onSuccess?.();
       } else {
+        const message =
+          result.error?.errors
+            ? // Extrae el primer mensaje de validación si existe
+              (Object.values(result.error.errors)[0] as any)
+            : result.error?.message || "Ocurrió un error.";
         toast({
           title: "Error",
-          // Mostrar el primer error de validación si existe (común en Laravel)
-          description: result.error?.errors ? Object.values(result.error.errors)[0] : (result.error?.message || "Ocurrió un error."),
+          description: typeof message === "string" ? message : JSON.stringify(message),
           variant: "destructive",
         });
       }
     } catch (err) {
-      console.error("Error en onSubmit del AuthModal:", err); // Restaurado
+      console.error("Error en onSubmit del AuthModal:", err);
       toast({
         title: "Error",
         description: (err as any)?.message || "Error en la operación",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false); // Restaurado
+      setIsLoading(false);
     }
   };
 
@@ -140,25 +134,42 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
           <DialogTitle>{type === "login" ? "Iniciar sesión" : "Crear cuenta"}</DialogTitle>
         </DialogHeader>
 
-        {/* Se aplica una altura máxima y scroll solo al contenedor de los campos.
-          Se añade pr-4 (padding-right) para dar espacio a la barra de scroll.
-        */}
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
           {type === "register" && (
             <div className="space-y-2">
               <Label htmlFor="nombre-modal">Nombre completo</Label>
-              <Input id="nombre-modal" name="nombre" placeholder="Nombre completo" value={formData.nombre} onChange={handleChange} />
+              <Input
+                id="nombre-modal"
+                name="nombre"
+                placeholder="Nombre completo"
+                value={formData.nombre}
+                onChange={handleChange}
+              />
             </div>
           )}
 
           <div className="space-y-2">
             <Label htmlFor="email-modal">Correo electrónico</Label>
-            <Input id="email-modal" name="email" type="email" placeholder="Correo electrónico" value={formData.email} onChange={handleChange} />
+            <Input
+              id="email-modal"
+              name="email"
+              type="email"
+              placeholder="Correo electrónico"
+              value={formData.email}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password-modal">Contraseña</Label>
-            <Input id="password-modal" name="password" type="password" placeholder="Contraseña" value={formData.password} onChange={handleChange} />
+            <Input
+              id="password-modal"
+              name="password"
+              type="password"
+              placeholder="Contraseña"
+              value={formData.password}
+              onChange={handleChange}
+            />
           </div>
 
           {type === "register" && (
@@ -174,6 +185,7 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
                   onChange={handleChange}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="peso-modal">Peso (kg)</Label>
                 <Input
@@ -185,6 +197,7 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
                   onChange={handleChange}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="altura-modal">Altura (cm)</Label>
                 <Input
@@ -196,6 +209,7 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
                   onChange={handleChange}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="edad-modal">Edad</Label>
                 <Input
@@ -208,19 +222,13 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
                 />
               </div>
 
-              {/* === COMPONENTE SELECT ACTUALIZADO === */}
               <div className="space-y-2">
                 <Label htmlFor="objetivo-modal">Objetivo</Label>
-                <Select
-                  name="objetivo"
-                  value={formData.objetivo}
-                  onValueChange={handleSelectChange} // Usar el nuevo manejador
-                >
+                <Select name="objetivo" value={formData.objetivo} onValueChange={handleSelectChange}>
                   <SelectTrigger id="objetivo-modal">
                     <SelectValue placeholder="Selecciona tu objetivo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* === VALORES ACTUALIZADOS PARA COINCIDIR CON LARAVEL === */}
                     <SelectItem value="perder_peso">Perder peso</SelectItem>
                     <SelectItem value="mantener">Mantener peso</SelectItem>
                     <SelectItem value="ganar_peso">Ganar peso</SelectItem>
@@ -229,22 +237,12 @@ export function AuthModal({ isOpen, onClose, type, onSubmit, onSuccess }: AuthMo
               </div>
             </>
           )}
-
-          {/* El botón se saca del div scrollable para que quede fijo abajo.
-            Pero en esta estructura, lo dejaremos adentro y haremos scroll
-            a todo el div "space-y-4" (la corrección es aplicar el scroll).
-            
-            CORRECCIÓN: Mover el botón fuera del div scrollable.
-          */}
         </div>
 
-        {/* El botón ahora es un hermano del div scrollable, no un hijo */}
-        <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
+        <Button onClick={handleSubmit} disabled={isLoading} className="w-full mt-4">
           {isLoading ? "Procesando..." : type === "login" ? "Iniciar sesión" : "Registrarse"}
         </Button>
-        
       </DialogContent>
     </Dialog>
   );
 }
-

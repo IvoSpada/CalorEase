@@ -1,436 +1,610 @@
-import { useEffect, useState } from "react";
-// Rutas de importación corregidas a relativas (../)
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Footer } from "../components/Footer";
-import ChatbotModal from "../components/ChatbotModal";
-import { AddFoodModal } from "../components/AddFoodModal";
-import { GenerateDietModal } from "../components/GenerateDietModal"; // MODIFICADO
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "../hooks/use-toast";
-import { useAuth } from "../hooks/useAuth";
-import { api } from "../services/api";
-import { getComidasDietaByDieta } from "../services/dietService"; // IMPORTADO
-import { Target, Plus, CheckCircle, Calendar, Wand2 } from "lucide-react"; // Importar Wand2
-import UserMenu from "../components/UserMenu";
-import type { Dieta, ComidaDieta } from "../types"; // Importar tipos
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Footer } from "@/components/Footer";
+import { AddFoodModal } from "@/components/AddFoodModal";
+import { GenerateDietModal } from "@/components/GenerateDietModal";
+import { AdjustMealModal } from "@/components/AdjustMealModal";
+import { ViewDietModal } from "@/components/ViewDietModal";
 
-type Meal = { id: number | string; tipo?: string; descripcion?: string; calorias?: number; [k: string]: any };
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
+import {
+  getDietas,
+  getComidasDietaByDieta,
+  updateDieta,
+  updateComidaDieta,
+} from "@/services/dietService";
+import { getComidasUsuario, createComidaUsuario } from "@/services/foodService";
+import { adjustDietWithIA } from "@/services/iaService";
+import {
+  Target,
+  Plus,
+  CheckCircle,
+  Calendar,
+  Utensils,
+  Flag,
+  Check,
+  X,
+  Loader2,
+} from "lucide-react";
+import UserMenu from "@/components/UserMenu";
+import type { Dieta, ComidaDieta, ComidaUsuario, Profile } from "@/types";
+
+// Helper para obtener la fecha de HOY en formato YYYY-MM-DD
+const getTodayDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0"); // +1 porque Enero es 0
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const Dashboard = () => {
-  console.log("Dashboard component file loaded");
-
-  const [showChatbotModal, setShowChatbotModal] = useState(false);
-  const [showAddFoodModal, setShowAddFoodModal] = useState(false);
-  const [showGenerateDietModal, setShowGenerateDietModal] = useState(false); // MODIFICADO
-  const [caloriesData, setCaloriesData] = useState<{ day: string; calories: number }[]>([]);
-  const [totalCalories, setTotalCalories] = useState(0);
-  const [recommendedCalories, setRecommendedCalories] = useState(14000);
-  const [macros, setMacros] = useState({ sugars: 0, carbs: 0, fats: 0 });
-  const [dietText, setDietText] = useState("Cargando dieta...");
-  
-  // MODIFICADO: El estado de plannedMeals ahora es de tipo ComidaDieta
-  const [dailySummary, setDailySummary] = useState<{ targetCalories: number; consumedCalories: number; plannedMeals: ComidaDieta[] }>({
-    targetCalories: 2000,
-    consumedCalories: 0,
-    plannedMeals: [], // Inicialmente vacío
-  });
-
-  const [profile, setProfile] = useState<any>(null);
-  const [comidas, setComidas] = useState<any[]>([]);
-  const [dietas, setDietas] = useState<Dieta[]>([]);
-
+  const [profile, setProfile] = useState<Profile | null>(null);
   const { usuario, isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
 
-  const getCaloriesFrom = (c: any) => (c ? Number(c.calorias ?? c.kcal ?? c.calories ?? c.energy ?? 0) || 0 : 0);
+  // Estados de la app
+  const [isLoading, setIsLoading] = useState(true);
+  const [dietas, setDietas] = useState<Dieta[]>([]);
+  const [activeDiet, setActiveDiet] = useState<Dieta | null>(null);
+  const [comidasPlanificadas, setComidasPlanificadas] = useState<ComidaDieta[]>([]);
+  const [comidasConsumidas, setComidasConsumidas] = useState<ComidaUsuario[]>([]);
 
-  // Función para obtener la fecha de hoy en YYYY-MM-DD
-  const getTodayString = () => new Date().toISOString().split("T")[0];
+  // Estados de Modales
+  const [showAddFoodModal, setShowAddFoodModal] = useState(false);
+  const [showGenerateDietModal, setShowGenerateDietModal] = useState(false);
+  const [showViewDietModal, setShowViewDietModal] = useState(false);
+  const [showAdjustMealModal, setShowAdjustMealModal] = useState(false);
+  const [mealToAdjust, setMealToAdjust] = useState<ComidaDieta | null>(null);
 
-  // Función para recargar los datos
-  const loadData = async () => {
-    if (!isLoggedIn || !usuario) {
-       if (!isLoggedIn) navigate("/");
-       return;
-    }
+  /**
+   * Carga todos los datos del dashboard desde cero
+   */
+  const loadData = useCallback(async () => {
+    if (!usuario?.id) return;
 
+    setIsLoading(true);
     try {
+      // 1. Obtener perfil
       const meRes = await api.get("/me", true);
-      if (!meRes.ok) {
-        toast({ title: "Error", description: "No se pudo obtener /me", variant: "destructive" });
-        return;
-      }
-      setProfile(meRes.data);
-
-      const userId = meRes.data?.id ?? usuario?.id;
-      if (!userId) {
-        console.warn("No se encontró id de usuario en /me ni en useAuth.usuario");
-        return;
-      }
-
-      // 1. Obtener datos del usuario (que incluye sus dietas)
-      const userRes = await api.get(`/usuarios/${userId}`, true);
-      if (!userRes.ok) {
-        console.warn("Fallo /usuarios/:id", userRes);
-        return; // Salir si falla
-      }
-      
-      const userData = userRes.data ?? {};
-      const _comidas = userData.comidas_usuario ?? userData.comidas ?? []; // Comidas consumidas
-      const _dietas = userData.dietas ?? []; // Dietas del usuario
-
-      setComidas(Array.isArray(_comidas) ? _comidas : []);
-      setDietas(Array.isArray(_dietas) ? _dietas : []);
-
-      // 2. Encontrar la dieta activa
-      const activeDiet = (_dietas || []).find((d: Dieta) => d.estado === "activa") ?? (_dietas && _dietas[0]);
-
-      if (!activeDiet) {
-          setDietText("No hay dieta activa. ¡Crea una!");
-          setDailySummary(prev => ({ ...prev, plannedMeals: [] }));
-          return; // No hay dieta, no hay nada más que cargar
-      }
-
-      setDietText(`Dieta activa: ${activeDiet.id} (IA)`);
-
-      // 3. Obtener las comidas planificadas (ComidaDieta) para esa dieta
-      // MODIFICADO: Hacemos una llamada separada para obtener las comidas de la dieta
-      const comidasDietaRes = await getComidasDietaByDieta(activeDiet.id);
-      let allPlannedMeals: ComidaDieta[] = [];
-
-      if (comidasDietaRes.ok && Array.isArray(comidasDietaRes.data)) {
-        allPlannedMeals = comidasDietaRes.data;
+      if (meRes.ok) {
+        setProfile(meRes.data);
       } else {
-        console.warn("No se pudieron cargar las comidas para la dieta activa");
+        throw new Error("No se pudo obtener el perfil del usuario");
       }
 
-      // 4. Filtrar comidas planificadas para HOY
-      const today = getTodayString();
-      const todaysPlannedMeals = allPlannedMeals.filter(meal => meal.fecha === today);
-      
-      // 5. Filtrar comidas ya consumidas (ComidaUsuario) de HOY
-      const todaysConsumedMeals = (_comidas || []).filter((c: any) => {
-        const fecha = c.fecha_consumo ?? c.fecha ?? c.created_at;
-        return String(fecha).startsWith(today);
-      });
+      // 2. Obtener dietas
+      const dietasRes = await getDietas(usuario.id);
+      let currentActiveDiet: Dieta | null = null;
+      if (dietasRes.ok && Array.isArray(dietasRes.data)) {
+        setDietas(dietasRes.data);
+        currentActiveDiet =
+          dietasRes.data.find((d) => d.estado && d.estado.trim().toLowerCase() === "activa") ??
+          null;
+        setActiveDiet(currentActiveDiet);
+      } else {
+        setDietas([]);
+        setActiveDiet(null);
+      }
 
-      // 6. Calcular calorías consumidas
-      const consumedCalories = todaysConsumedMeals.reduce((s: number, c: any) => {
-          // Si la comida consumida está vinculada, usamos las calorías de la comida planificada
-          const linkedMeal = allPlannedMeals.find(m => m.id === c.comida_dieta_id);
-          if (linkedMeal) {
-            return s + (Number(linkedMeal.calorias) * (Number(c.cantidad) || 1));
-          }
-          // Si es una comida libre (no debería pasar con la lógica nueva, pero por si acaso)
-          return s + getCaloriesFrom(c);
-      }, 0);
-      
-      // 7. Determinar qué comidas planificadas de hoy QUEDAN PENDIENTES
-      const consumedMealIds = new Set(todaysConsumedMeals.map((c: any) => c.comida_dieta_id));
-      const pendingMeals = todaysPlannedMeals.filter(meal => !consumedMealIds.has(meal.id));
-
-      setDailySummary(prev => ({ 
-        ...prev, 
-        consumedCalories: consumedCalories, 
-        plannedMeals: pendingMeals // El dashboard ahora solo muestra comidas PENDIENTES
-      }));
-
-      // ... (lógica del gráfico de calorías sin cambios)
-      if (_comidas && _comidas.length > 0) {
-        const daysMap: Record<string, number> = {};
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          const key = d.toLocaleDateString("es-AR", { weekday: "short" });
-          daysMap[key] = 0;
+      // 3. Obtener comidas planificadas (solo si hay dieta activa)
+      if (currentActiveDiet) {
+        const comidasPlanRes = await getComidasDietaByDieta(currentActiveDiet.id);
+        if (comidasPlanRes.ok && Array.isArray(comidasPlanRes.data)) {
+          setComidasPlanificadas(comidasPlanRes.data);
+        } else {
+          setComidasPlanificadas([]);
         }
-        todaysConsumedMeals.forEach((c: any) => { // Solo comidas consumidas
-          const fecha = c.fecha_consumo ?? c.fecha ?? c.created_at;
-          const d = fecha ? new Date(fecha) : null;
-          const key = d ? d.toLocaleDateString("es-AR", { weekday: "short" }) : "Otro";
-          if (daysMap[key] === undefined) daysMap[key] = 0;
-          daysMap[key] += getCaloriesFrom(c);
-        });
-        const chart = Object.keys(daysMap).map((k) => ({ day: k, calories: daysMap[k] }));
-        setCaloriesData(chart);
-        setTotalCalories(chart.reduce((s, x) => s + x.calories, 0));
-        setMacros({ sugars: 100, carbs: 600, fats: 200 }); // (Esto sigue siendo mock)
       } else {
-         const mock = [
-            { day: "Lun", calories: 0 }, { day: "Mar", calories: 0 }, { day: "Mié", calories: 0 },
-            { day: "Jue", calories: 0 }, { day: "Vie", calories: 0 }, { day: "Sáb", calories: 0 }, { day: "Dom", calories: 0 },
-          ];
-          setCaloriesData(mock);
-          setTotalCalories(0);
+        setComidasPlanificadas([]);
       }
 
+      // 4. Obtener comidas ya consumidas
+      const comidasConsRes = await getComidasUsuario(usuario.id);
+      if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
+        setComidasConsumidas(comidasConsRes.data);
+      } else {
+        setComidasConsumidas([]);
+      }
     } catch (err) {
       console.error("Error cargando datos del dashboard", err);
-      toast({ title: "Error", description: "No se pudieron cargar datos", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos del dashboard.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [usuario?.id]); // evitamos re-crear la función en cada render
 
+  // Carga inicial y recarga cuando cambia el login
   useEffect(() => {
-    console.log("Dashboard useEffect mount - isLoggedIn:", isLoggedIn);
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, navigate, usuario]);
+    if (isLoggedIn && usuario?.id) {
+      loadData();
+    } else if (!isLoggedIn) {
+      // Si no está logueado, limpiar todo
+      setProfile(null);
+      setDietas([]);
+      setActiveDiet(null);
+      setComidasPlanificadas([]);
+      setComidasConsumidas([]);
+      setIsLoading(true);
+    }
+  }, [isLoggedIn, usuario?.id, loadData]);
 
-  const handleLogout = async () => {
+  // --- LÓGICA DE FILTRADO DE FECHA ---
+
+  const todayStr = getTodayDateString();
+
+  const todaysComidas = useMemo(() => {
+    if (!activeDiet || !comidasPlanificadas) return [];
+    return comidasPlanificadas.filter((c) => c.fecha && c.fecha.startsWith(todayStr));
+  }, [activeDiet, comidasPlanificadas, todayStr]);
+
+  const todaysComidasConsumidas = useMemo(() => {
+    if (!comidasConsumidas) return [];
+    return comidasConsumidas.filter((c) => c.fecha && c.fecha.startsWith(todayStr));
+  }, [comidasConsumidas, todayStr]);
+
+  // Calcula los días transcurridos de la dieta activa
+  const diasTranscurridos = useMemo(() => {
+    if (!activeDiet?.fecha_inicio) return 0;
+    const inicio = new Date(activeDiet.fecha_inicio).getTime();
+    const hoy = new Date().getTime();
+    const diff = Math.max(0, hoy - inicio);
+    return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+  }, [activeDiet]);
+
+  // -- Acciones --
+
+  const handleLogout = useCallback(async () => {
+    const loadingToast = toast({
+      title: "Cerrando sesión...",
+      description: <Loader2 className="animate-spin" />,
+      duration: Infinity,
+    });
     try {
-      const res = await logout();
-      if (res && typeof res === "object" && "ok" in res && !res.ok) {
-        toast({
-          title: "Sesión cerrada (local)",
-          description: "No se pudo invalidar token en servidor. Sesión local eliminada.",
-          variant: "destructive",
-        });
-      } else {
-        toast({ title: "Sesión cerrada", description: "Hasta la próxima" });
-      }
-      navigate("/");
+      await logout(); // Llama a la función de logout del hook
+
+      // --- LIMPIEZA DE ESTADO ---
+      setProfile(null);
+      setDietas([]);
+      setActiveDiet(null);
+      setComidasPlanificadas([]);
+      setComidasConsumidas([]);
+      setIsLoading(true);
+
+      dismiss(loadingToast.id);
+      toast({ title: "Sesión cerrada", description: "Hasta la próxima" });
+      navigate("/"); // Redirige al login
     } catch (err) {
+      dismiss(loadingToast.id);
       toast({ title: "Error", description: "No se pudo cerrar sesión", variant: "destructive" });
     }
-  };
+  }, [logout, navigate, toast, dismiss]);
 
-  const openChatbot = () => setShowChatbotModal(true);
-  const openAddFood = () => setShowAddFoodModal(true);
-  const openGenerateDiet = () => setShowGenerateDietModal(true); // MODIFICADO
+  // Marcar una comida como completada
+  const handleMarkAsComplete = useCallback(
+    async (comida: ComidaDieta) => {
+      if (!usuario?.id) return;
 
-  const markMealConsumed = async (mealId: number | string) => {
-    // Esta función se llama desde AddFoodModal ahora, pero la dejamos
-    // por si se usa en otro lado.
-     try {
-      // payload simple, la lógica de 'cantidad' está en AddFoodModal
-      const body = { 
-        usuario_id: profile?.id ?? usuario?.id, 
-        comida_dieta_id: mealId,
-        fecha_consumo: new Date().toISOString().slice(0, 19).replace("T", " "),
-        cantidad: 1
-      };
-      const resp = await api.post("/comidas-usuarios", body, true); // Usa el endpoint correcto
-      
-      if (!resp.ok) {
-         const errorData = resp.data as any;
-         const errorMsg = errorData?.errors ? Object.values(errorData.errors).flat().join(' ') : (resp.error?.message || "Error desconocido");
-         throw new Error(errorMsg);
+      try {
+        const payload = {
+          usuario_id: usuario.id,
+          comida_dieta_id: comida.id,
+          fecha: getTodayDateString(),
+          opcion: "planificada",
+          descripcion: comida.descripcion,
+          calorias: comida.calorias,
+          proteinas: comida.proteinas,
+          carbohidratos: comida.carbohidratos,
+          grasas: comida.grasas,
+        };
+
+        const res = await createComidaUsuario(payload);
+        if (!res.ok) {
+          console.error("Error al crear ComidaUsuario:", res.data);
+          throw new Error(res.data?.message || "No se pudo guardar la comida");
+        }
+
+        toast({ title: "¡Comida Completada!", description: comida.descripcion, variant: "default" });
+        // Recargar solo las comidas consumidas para eficiencia
+        const comidasConsRes = await getComidasUsuario(usuario.id);
+        if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
+          setComidasConsumidas(comidasConsRes.data);
+        }
+      } catch (err) {
+        console.error("Error marcando comida como completada", err);
+        toast({
+          title: "Error",
+          description: (err as Error).message || "No se pudo marcar la comida",
+          variant: "destructive",
+        });
       }
+    },
+    [usuario?.id, toast]
+  );
 
-      toast({ title: "Comida marcada", description: "Comida planificada marcada como consumida." });
-      // Recargar datos para que la comida desaparezca de "pendientes"
-      loadData(); 
-      
-    } catch (err: any) {
-      console.error("Error marcando comida", err);
-      toast({ title: "Error", description: err.message || "No se pudo marcar la comida", variant: "destructive" });
-    }
-  };
+  // Abrir modal para comida "alternativa"
+  const handleMarkAsDifferent = useCallback((comida: ComidaDieta) => {
+    setMealToAdjust(comida);
+    setShowAdjustMealModal(true);
+  }, []);
 
-  const viewWeeklyDiet = () => navigate("/dietas");
+  // Activar una nueva dieta
+  const handleActivateDiet = useCallback(
+    async (dietaId: number) => {
+      const loadingToast = toast({
+        title: "Cambiando de dieta...",
+        description: <Loader2 className="animate-spin" />,
+        duration: Infinity,
+      });
+      try {
+        // 1. Poner la nueva como "activa"
+        const res = await updateDieta(dietaId, { estado: "activa" });
+        if (!res.ok) throw new Error("No se pudo activar la nueva dieta");
 
-  const progressPercent = Math.round((dailySummary.consumedCalories / Math.max(1, dailySummary.targetCalories)) * 100);
+        // 2. (Opcional) Poner todas las demás como "finalizada"
+        const otrasDietas = dietas.filter((d) => d.id !== dietaId && d.estado === "activa");
+        for (const dieta of otrasDietas) {
+          await updateDieta(dieta.id, { estado: "finalizada" });
+        }
 
+        // 3. Recargar todos los datos
+        await loadData();
+        dismiss(loadingToast.id);
+      } catch (err) {
+        console.error("Error activando dieta", err);
+        dismiss(loadingToast.id);
+        toast({
+          title: "Error",
+          description: (err as Error).message || "No se pudo cambiar de dieta",
+          variant: "destructive",
+        });
+      }
+    },
+    [dietas, loadData, toast, dismiss]
+  );
+
+  // Acciones de Modales
+  const openAddFood = useCallback(() => setShowAddFoodModal(true), []);
+  const openGenerateDiet = useCallback(() => setShowGenerateDietModal(true), []);
+  const openViewDiet = useCallback(() => setShowViewDietModal(true), []);
+
+  // --- Renderizado ---
+
+  // Loading
+  if (isLoading && !profile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-16 h-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Dashboard principal
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Dashboard</h2>
             <p className="text-sm text-muted-foreground">Resumen personal y comidas</p>
           </div>
           <div className="flex items-center gap-4">
-            {profile?.nombre || usuario?.nombre ? (
-              <UserMenu profile={profile ?? usuario} onLogout={handleLogout} />
+            {profile ? (
+              <UserMenu profile={profile} onLogout={handleLogout} />
             ) : (
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                Cerrar sesión
+              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+                Iniciar Sesión
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8 text-center">Dashboard de Nutrición</h1>
+      {/* Contenido Principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold mb-8 text-center">
+          Tu Resumen, <span className="text-primary">{profile?.nombre ?? "Usuario"}</span>
+        </h1>
 
         {/* Resumen Diario */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="p-6 text-center">
               <Target className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <div className="text-2xl font-bold">{dailySummary.targetCalories} kcal</div>
-              <div className="text-sm text-muted-foreground">Meta Diaria</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
-              <div className="text-2xl font-bold">{dailySummary.consumedCalories} kcal</div>
-              <div className="text-sm text-muted-foreground">Consumidas Hoy</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold">{progressPercent}%</div>
-              <div className="text-sm text-muted-foreground">Progreso</div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: `${Math.min(progressPercent, 100)}%` }} />
+              <div className="text-2xl font-bold capitalize">
+                {profile?.objetivo?.replace("_", " ") ?? "Sin objetivo"}
               </div>
+              <div className="text-sm text-muted-foreground">Tu Objetivo</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 text-center">
+              <Utensils className="w-8 h-8 mx-auto mb-2" />
+              <div className="text-2xl font-bold">
+                {todaysComidasConsumidas.length} / {todaysComidas.length}
+              </div>
+              <div className="text-sm text-muted-foreground">Comidas de Hoy</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6 text-center">
+              <Calendar className="w-8 h-8 mx-auto mb-2" />
+              <div className="text-2xl font-bold">Día {diasTranscurridos}</div>
+              <div className="text-sm text-muted-foreground">de tu Dieta Actual</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* MODIFICADO: Comidas PENDIENTES para Hoy */}
+        {/* Botones de Acción */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Button variant="hero" size="lg" onClick={openAddFood} disabled={!activeDiet}>
+            <Plus className="w-4 h-4 mr-2" />
+            Agregar Comida
+          </Button>
+          <Button variant="secondary" size="lg" onClick={openGenerateDiet}>
+            <Plus className="w-4 h-4 mr-2" />
+            Generar Nueva Dieta
+          </Button>
+          <Button variant="outline" size="lg" onClick={openViewDiet} disabled={!activeDiet}>
+            <Calendar className="w-4 h-4 mr-2" />
+            Ver Dieta Actual
+          </Button>
+          {!activeDiet && (
+            <p className="text-red-500 self-center">
+              Debes generar y activar una dieta para agregar comidas o ver tu plan.
+            </p>
+          )}
+        </div>
+
+        {/* Comidas de Hoy */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Comidas Pendientes para Hoy</CardTitle>
+            <CardTitle>Comidas Planificadas para Hoy ({getTodayDateString()})</CardTitle>
           </CardHeader>
           <CardContent>
-            {dailySummary.plannedMeals && dailySummary.plannedMeals.length > 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="animate-spin" />
+              </div>
+            ) : todaysComidas.length > 0 ? (
               <div className="space-y-4">
-                {dailySummary.plannedMeals.map((meal) => (
-                  <div key={meal.id} className="flex justify-between items-center p-4 border rounded">
-                    <div>
-                      <div className="font-semibold capitalize">
-                        {meal.tipo}: <span className="font-normal">{meal.descripcion}</span>
+                {todaysComidas.map((meal) => {
+                  const isCompleted = todaysComidasConsumidas.some((c) => c.comida_dieta_id === meal.id);
+                  return (
+                    <div
+                      key={meal.id}
+                      className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg ${
+                        isCompleted ? "bg-green-50 border-green-200" : "bg-card"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-lg">
+                          {isCompleted && <CheckCircle className="w-5 h-5 mr-2 inline text-green-600" />}
+                          {meal.tipo}
+                        </div>
+                        <p className="text-muted-foreground ml-7 sm:ml-0">{meal.descripcion}</p>
+
+                        <p className="text-sm text-blue-600 font-medium ml-7 sm:ml-0">
+                          {meal.calorias} kcal
+                        </p>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {meal.calorias ?? 0} kcal • 
-                        P: {meal.proteinas}g • 
-                        C: {meal.carbohidratos}g • 
-                        G: {meal.grasas}g
+                      <div className="flex gap-2 mt-3 sm:mt-0 self-end sm:self-center">
+                        {isCompleted ? (
+                          <div className="flex items-center gap-2 p-2 rounded-md bg-green-100 text-green-700 font-medium">
+                            <Check /> Completada
+                          </div>
+                        ) : (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => handleMarkAsDifferent(meal)}>
+                              <Flag className="w-4 h-4 mr-1" /> Comí Algo Diferente
+                            </Button>
+                            <Button variant="default" size="sm" onClick={() => handleMarkAsComplete(meal)}>
+                              <Check className="w-4 h-4 mr-1" /> Marcar como Completada
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
-                    {/* Botón para marcar como consumida directamente */}
-                    <Button variant="outline" size="sm" onClick={() => markMealConsumed(meal.id)}>
-                      Marcar Consumida
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p>¡Felicidades! No tienes más comidas pendientes por hoy.</p>
+              <p>
+                {activeDiet ? "No hay comidas planificadas para hoy." : "No hay una dieta activa seleccionada."}
+              </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Botones de Acción */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <Button variant="hero" size="lg" onClick={openAddFood}>
-            <Plus className="w-4 h-4 mr-2" />
-            Registrar Comida (de Dieta)
-          </Button>
-          <Button variant="outline" size="lg" onClick={viewWeeklyDiet}>
-            <Calendar className="w-4 h-4 mr-2" />
-            Ver Dieta Semanal
-          </Button>
-          
-          {/* BOTÓN PARA NUEVO MODAL DE DIETA */}
-          <Button variant="outline" size="lg" onClick={openGenerateDiet}>
-            <Wand2 className="w-4 h-4 mr-2" />
-            Generar Nueva Dieta con IA
-          </Button>
-        </div>
-
-        {/* ... resto igual (gráfico, macros, dieta) */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Calorías Consumidas (Últimos 7 Días)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={caloriesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="calories" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Calorías Totales de la Semana:</span>
-                    <span className="font-bold">{totalCalories} kcal</span>
+        {/* Mis Dietas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Mis Dietas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dietas.length > 0 ? (
+              <div className="space-y-4">
+                {dietas.map((dieta) => (
+                  <div
+                    key={dieta.id}
+                    className="flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg"
+                  >
+                    <div>
+                      <div className="font-semibold text-lg">
+                        Dieta del {dieta.fecha_inicio} al {dieta.fecha_fin}
+                      </div>
+                      <p className="text-muted-foreground">
+                        Origen: {dieta.origen} | Estado:{" "}
+                        <span className={`font-medium ${dieta.estado === "activa" ? "text-green-600" : "text-gray-500"}`}>
+                          {dieta.estado}
+                        </span>
+                      </p>
+                    </div>
+                    {dieta.estado !== "activa" ? (
+                      <Button variant="outline" size="sm" onClick={() => handleActivateDiet(dieta.id)} className="mt-3 sm:mt-0">
+                        Activar esta dieta
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-green-100 text-green-700 font-medium mt-3 sm:mt-0">
+                        <Check /> Activa
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span>Calorías Recomendadas de la Semana:</span>
-                    <span className="font-bold">{recommendedCalories} kcal</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Macros Totales de la Semana (Mock)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Azúcares:</span>
-                    <span className="font-bold">{macros.sugars} g</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Carbohidratos:</span>
-                    <span className="font-bold">{macros.carbs} g</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Grasas:</span>
-                    <span className="font-bold">{macros.fats} g</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Button variant="hero" size="lg" onClick={openChatbot}>
-              Abrir Chatbot (General)
-            </Button>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tu Dieta Recomendada</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-line">{dietText}</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                ))}
+              </div>
+            ) : (
+              <p>No has generado ninguna dieta todavía.</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Footer */}
       <Footer />
 
-      {/* MODALES */}
-      <ChatbotModal isOpen={showChatbotModal} onClose={() => setShowChatbotModal(false)} />
-      
-      <AddFoodModal
-        isOpen={showAddFoodModal}
-        onClose={() => setShowAddFoodModal(false)}
-        onSaved={(food: any) => {
-          // Recargar datos para que el dashboard se actualice
-          loadData(); 
-          toast({ title: "Comida agregada", description: "Comida registrada exitosamente." });
-        }}
-      />
-      
-      {/* RENDERIZAR NUEVO MODAL DE DIETA */}
-      <GenerateDietModal 
-        isOpen={showGenerateDietModal}
-        onClose={() => setShowGenerateDietModal(false)}
-        onDietaCreada={(dieta: Dieta) => {
-          // Recargar los datos del dashboard cuando se crea una dieta
-          loadData(); 
-          toast({ title: "Dieta Creada", description: `Tu nueva dieta (ID: ${dieta.id}) ha sido registrada.` });
-        }}
-      />
+      {/* Modales */}
+      {showGenerateDietModal && (
+        <GenerateDietModal
+          isOpen={showGenerateDietModal}
+          onClose={() => setShowGenerateDietModal(false)}
+          onDietaCreada={() => {
+            setShowGenerateDietModal(false);
+            loadData(); // Recargar todo
+          }}
+        />
+      )}
+
+      {showAddFoodModal && (
+        <AddFoodModal
+          isOpen={showAddFoodModal}
+          onClose={() => setShowAddFoodModal(false)}
+          onSaved={() => {
+            setShowAddFoodModal(false);
+            loadData(); // Recargar todo
+          }}
+        />
+      )}
+
+      {showViewDietModal && activeDiet && (
+        <ViewDietModal
+          isOpen={showViewDietModal}
+          onClose={() => setShowViewDietModal(false)}
+          dieta={activeDiet}
+          comidas={comidasPlanificadas}
+        />
+      )}
+
+      {showAdjustMealModal && mealToAdjust && profile && (
+        <AdjustMealModal
+          isOpen={showAdjustMealModal}
+          onClose={() => setShowAdjustMealModal(false)}
+          comidaPlanificada={mealToAdjust}
+          profile={profile}
+          onComidaAlternativaGuardada={async (comidaAlternativa) => {
+            // 1. Guardar la comida alternativa (opcion: 'alternativa')
+            try {
+              const payload = {
+                ...comidaAlternativa,
+                usuario_id: usuario!.id,
+                comida_dieta_id: mealToAdjust.id,
+                fecha: getTodayDateString(),
+                opcion: "alternativa",
+              };
+              const res = await createComidaUsuario(payload);
+              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa");
+
+              toast({ title: "Comida alternativa guardada" });
+              setShowAdjustMealModal(false);
+
+              // 2. Llamar a la IA para re-ajustar el plan
+              try {
+                const toastAjuste = toast({
+                  title: "Ajustando dieta con IA...",
+                  description: <Loader2 className="animate-spin" />,
+                  duration: Infinity,
+                });
+
+                // Filtro: Comidas futuras (mayores a hoyStr)
+                const comidasRestantes = comidasPlanificadas.filter((c) => c.fecha && c.fecha > todayStr);
+
+                if (comidasRestantes.length === 0) {
+                  dismiss(toastAjuste.id);
+                  toast({ title: "No hay comidas futuras", description: "No hay nada que re-ajustar." });
+                  loadData(); // Recargar datos de hoy
+                  return;
+                }
+
+                const resIA = await adjustDietWithIA(comidaAlternativa, comidasRestantes, profile);
+
+                if (!resIA.ok || !Array.isArray(resIA.data)) {
+                  dismiss(toastAjuste.id);
+                  toast({
+                    title: "Error de IA",
+                    description: resIA.error?.message || "La IA no devolvió un plan válido.",
+                    variant: "destructive",
+                    duration: 5000,
+                  });
+                } else {
+                  // Bucle para actualizar comidas en Laravel
+                  const comidasAjustadas: ComidaDieta[] = resIA.data;
+                  toast({
+                    title: `Actualizando ${comidasAjustadas.length} comidas...`,
+                    description: <Loader2 className="animate-spin" />,
+                    duration: Infinity,
+                    id: toastAjuste.id,
+                  });
+
+                  let errores = 0;
+                  for (const comida of comidasAjustadas) {
+                    const payloadUpdate = {
+                      descripcion: comida.descripcion,
+                      calorias: comida.calorias,
+                      proteinas: comida.proteinas,
+                      carbohidratos: comida.carbohidratos,
+                      grasas: comida.grasas,
+                    };
+                    const resUpdate = await updateComidaDieta(comida.id, payloadUpdate);
+                    if (!resUpdate.ok) {
+                      console.error(`Error actualizando comida ${comida.id}`, resUpdate.data);
+                      errores++;
+                    }
+                  }
+
+                  dismiss(toastAjuste.id);
+                  if (errores > 0) {
+                    toast({
+                      title: "Plan ajustado con errores",
+                      description: `La IA funcionó, pero ${errores} comidas no se pudieron guardar.`,
+                      variant: "destructive",
+                    });
+                  } else {
+                    toast({ title: "¡Dieta Re-ajustada!", description: "La IA ha actualizado tus próximos días." });
+                  }
+                }
+              } catch (err) {
+                toast({ title: "Error de IA", description: (err as Error).message, variant: "destructive" });
+              }
+
+              // 3. Recargar datos
+              loadData();
+            } catch (err) {
+              toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

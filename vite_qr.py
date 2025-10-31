@@ -4,7 +4,7 @@ import os
 #TENER LA LIBRERIA pip install qrcode[pil]
 def main():
     npm_path = r"C:\Program Files\nodejs\npm.cmd"  # Ajusta según tu instalación
-    project_dir = r"C:\wamp64\www\CalorEase-newgen"       # Carpeta donde está tu package.json
+    project_dir = r"C:\wamp64\www\CalorEase"       # Carpeta donde está tu package.json
 
     # Cambiar a la carpeta del proyecto
     os.chdir(project_dir)

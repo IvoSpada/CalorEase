@@ -1,4 +1,6 @@
-// src/services/api.ts
+// Usamos el código de api.ts que me proporcionaste anteriormente.
+// Este archivo asume que las rutas de alias ("@/...") NO funcionan.
+
 const API_URL = "http://127.0.0.1:8000/api";
 
 let authToken: string | null = null;
@@ -83,3 +85,4 @@ export const api = {
   put: <T = any>(endpoint: string, body: any, useAuth = false) => request<T>(endpoint, "PUT", body, useAuth),
   del: <T = any>(endpoint: string, useAuth = false) => request<T>(endpoint, "DELETE", null, useAuth),
 };
+
