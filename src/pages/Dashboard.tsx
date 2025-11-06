@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Footer } from "@/components/Footer";
 import { AddFoodModal } from "@/components/AddFoodModal";
 import { GenerateDietModal } from "@/components/GenerateDietModal";
@@ -27,20 +29,43 @@ import {
   Utensils,
   Flag,
   Check,
-  X,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import type { Dieta, ComidaDieta, ComidaUsuario, Profile } from "@/types";
 
-// Helper para obtener la fecha de HOY en formato YYYY-MM-DD
-const getTodayDateString = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0"); // +1 porque Enero es 0
-  const day = String(d.getDate()).padStart(2, "0");
+// --- Funciones Helper de Fechas ---
+
+/**
+ * Obtiene una fecha en formato YYYY-MM-DD
+ */
+const getFormattedDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+/**
+ * Parsea una fecha YYYY-MM-DD como local (evita problemas de zona horaria)
+ */
+const parseDateAsLocal = (dateString: string): Date => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+/**
+ * Añade días a una fecha (Date) y devuelve una nueva Date
+ */
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+// --- Componente Principal ---
 
 const Dashboard = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -58,9 +83,28 @@ const Dashboard = () => {
   // Estados de Modales
   const [showAddFoodModal, setShowAddFoodModal] = useState(false);
   const [showGenerateDietModal, setShowGenerateDietModal] = useState(false);
-  const [showViewDietModal, setShowViewDietModal] = useState(false);
   const [showAdjustMealModal, setShowAdjustMealModal] = useState(false);
   const [mealToAdjust, setMealToAdjust] = useState<ComidaDieta | null>(null);
+
+  // Estado para el modal "Ver Dieta"
+  const [showViewDietModal, setShowViewDietModal] = useState(false);
+  const [dataForViewModal, setDataForViewModal] = useState<{ dieta: Dieta; comidas: ComidaDieta[] } | null>(null);
+  const [selectedDietaIdForViewing, setSelectedDietaIdForViewing] = useState<string | null>(null);
+
+  // Estado para la navegación por días
+  const [todayStr, setTodayStr] = useState(getFormattedDateString(new Date()));
+  const [displayDate, setDisplayDate] = useState(new Date());
+  
+  // Actualizar 'todayStr' si el día cambia (ej. a medianoche)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newToday = getFormattedDateString(new Date());
+      if (newToday !== todayStr) {
+        setTodayStr(newToday);
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [todayStr]);
 
   /**
    * Carga todos los datos del dashboard desde cero
@@ -87,6 +131,10 @@ const Dashboard = () => {
           dietasRes.data.find((d) => d.estado && d.estado.trim().toLowerCase() === "activa") ??
           null;
         setActiveDiet(currentActiveDiet);
+        
+        if (!selectedDietaIdForViewing && currentActiveDiet) {
+          setSelectedDietaIdForViewing(String(currentActiveDiet.id));
+        }
       } else {
         setDietas([]);
         setActiveDiet(null);
@@ -121,47 +169,90 @@ const Dashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [usuario?.id]); // evitamos re-crear la función en cada render
+  }, [usuario?.id, selectedDietaIdForViewing]);
 
   // Carga inicial y recarga cuando cambia el login
   useEffect(() => {
     if (isLoggedIn && usuario?.id) {
       loadData();
     } else if (!isLoggedIn) {
-      // Si no está logueado, limpiar todo
       setProfile(null);
       setDietas([]);
       setActiveDiet(null);
       setComidasPlanificadas([]);
       setComidasConsumidas([]);
       setIsLoading(true);
+      setDisplayDate(new Date());
     }
   }, [isLoggedIn, usuario?.id, loadData]);
 
-  // --- LÓGICA DE FILTRADO DE FECHA ---
+  // String de la fecha que se está mostrando
+  const displayDateStr = useMemo(() => getFormattedDateString(displayDate), [displayDate]);
 
-  const todayStr = getTodayDateString();
-
-  const todaysComidas = useMemo(() => {
+  // Comidas planificadas filtradas por el día que se está mostrando
+  const displayedComidas = useMemo(() => {
     if (!activeDiet || !comidasPlanificadas) return [];
-    return comidasPlanificadas.filter((c) => c.fecha && c.fecha.startsWith(todayStr));
-  }, [activeDiet, comidasPlanificadas, todayStr]);
+    return comidasPlanificadas.filter((c) => c.fecha && c.fecha === displayDateStr);
+  }, [activeDiet, comidasPlanificadas, displayDateStr]);
 
-  const todaysComidasConsumidas = useMemo(() => {
+  // Comidas consumidas filtradas por el día que se está mostrando
+  const displayedComidasConsumidas = useMemo(() => {
     if (!comidasConsumidas) return [];
-    return comidasConsumidas.filter((c) => c.fecha && c.fecha.startsWith(todayStr));
-  }, [comidasConsumidas, todayStr]);
+    return comidasConsumidas.filter((c) => 
+      c.fecha && c.fecha === displayDateStr && c.comida_dieta_id !== null
+    );
+  }, [comidasConsumidas, displayDateStr]);
+
+  // Comidas adicionales
+  const displayedComidasAdicionales = useMemo(() => {
+    if (!comidasConsumidas) return [];
+    return comidasConsumidas.filter((c) =>
+      c.fecha && c.fecha === displayDateStr && c.comida_dieta_id === null
+    );
+  }, [comidasConsumidas, displayDateStr]);
+
+  // Verificar si hay comidas alternativas hoy
+  const hayComidasAlternativasHoy = useMemo(() => {
+    if (!comidasConsumidas) return false;
+    return comidasConsumidas.some((c) => 
+      c.fecha === displayDateStr && c.opcion === 'alternativa'
+    );
+  }, [comidasConsumidas, displayDateStr]);
 
   // Calcula los días transcurridos de la dieta activa
   const diasTranscurridos = useMemo(() => {
     if (!activeDiet?.fecha_inicio) return 0;
-    const inicio = new Date(activeDiet.fecha_inicio).getTime();
-    const hoy = new Date().getTime();
+    const inicio = parseDateAsLocal(activeDiet.fecha_inicio).getTime();
+    const hoy = new Date(todayStr).getTime(); 
     const diff = Math.max(0, hoy - inicio);
     return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-  }, [activeDiet]);
+  }, [activeDiet, todayStr]);
 
-  // -- Acciones --
+  const isViewingToday = useMemo(() => displayDateStr === todayStr, [displayDateStr, todayStr]);
+
+  const canGoToPrevDay = useMemo(() => {
+    if (!activeDiet?.fecha_inicio) return false;
+    const inicioDieta = parseDateAsLocal(activeDiet.fecha_inicio);
+    return displayDate > inicioDieta;
+  }, [displayDate, activeDiet?.fecha_inicio]);
+
+  const canGoToNextDay = useMemo(() => {
+    if (!activeDiet?.fecha_fin) return false;
+    const finDieta = parseDateAsLocal(activeDiet.fecha_fin);
+    return displayDate < finDieta;
+  }, [displayDate, activeDiet?.fecha_fin]);
+
+  const handlePrevDay = () => {
+    if (canGoToPrevDay) {
+      setDisplayDate((prev) => addDays(prev, -1));
+    }
+  };
+
+  const handleNextDay = () => {
+    if (canGoToNextDay) {
+      setDisplayDate((prev) => addDays(prev, 1));
+    }
+  };
 
   const handleLogout = useCallback(async () => {
     const loadingToast = toast({
@@ -170,35 +261,25 @@ const Dashboard = () => {
       duration: Infinity,
     });
     try {
-      await logout(); // Llama a la función de logout del hook
-
-      // --- LIMPIEZA DE ESTADO ---
-      setProfile(null);
-      setDietas([]);
-      setActiveDiet(null);
-      setComidasPlanificadas([]);
-      setComidasConsumidas([]);
-      setIsLoading(true);
-
+      await logout();
       dismiss(loadingToast.id);
       toast({ title: "Sesión cerrada", description: "Hasta la próxima" });
-      navigate("/"); // Redirige al login
+      navigate("/");
     } catch (err) {
       dismiss(loadingToast.id);
       toast({ title: "Error", description: "No se pudo cerrar sesión", variant: "destructive" });
     }
-  }, [logout, navigate, toast, dismiss]);
+  }, [logout, navigate]);
 
-  // Marcar una comida como completada
   const handleMarkAsComplete = useCallback(
     async (comida: ComidaDieta) => {
-      if (!usuario?.id) return;
+      if (!usuario?.id || !isViewingToday) return;
 
       try {
         const payload = {
           usuario_id: usuario.id,
           comida_dieta_id: comida.id,
-          fecha: getTodayDateString(),
+          fecha: todayStr,
           opcion: "planificada",
           descripcion: comida.descripcion,
           calorias: comida.calorias,
@@ -214,7 +295,7 @@ const Dashboard = () => {
         }
 
         toast({ title: "¡Comida Completada!", description: comida.descripcion, variant: "default" });
-        // Recargar solo las comidas consumidas para eficiencia
+        
         const comidasConsRes = await getComidasUsuario(usuario.id);
         if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
           setComidasConsumidas(comidasConsRes.data);
@@ -228,16 +309,15 @@ const Dashboard = () => {
         });
       }
     },
-    [usuario?.id, toast]
+    [usuario?.id, todayStr, isViewingToday]
   );
 
-  // Abrir modal para comida "alternativa"
   const handleMarkAsDifferent = useCallback((comida: ComidaDieta) => {
+    if (!isViewingToday) return;
     setMealToAdjust(comida);
     setShowAdjustMealModal(true);
-  }, []);
+  }, [isViewingToday]);
 
-  // Activar una nueva dieta
   const handleActivateDiet = useCallback(
     async (dietaId: number) => {
       const loadingToast = toast({
@@ -246,17 +326,15 @@ const Dashboard = () => {
         duration: Infinity,
       });
       try {
-        // 1. Poner la nueva como "activa"
         const res = await updateDieta(dietaId, { estado: "activa" });
         if (!res.ok) throw new Error("No se pudo activar la nueva dieta");
 
-        // 2. (Opcional) Poner todas las demás como "finalizada"
         const otrasDietas = dietas.filter((d) => d.id !== dietaId && d.estado === "activa");
         for (const dieta of otrasDietas) {
           await updateDieta(dieta.id, { estado: "finalizada" });
         }
 
-        // 3. Recargar todos los datos
+        setDisplayDate(new Date());
         await loadData();
         dismiss(loadingToast.id);
       } catch (err) {
@@ -269,17 +347,42 @@ const Dashboard = () => {
         });
       }
     },
-    [dietas, loadData, toast, dismiss]
+    [dietas, loadData]
   );
 
-  // Acciones de Modales
   const openAddFood = useCallback(() => setShowAddFoodModal(true), []);
   const openGenerateDiet = useCallback(() => setShowGenerateDietModal(true), []);
-  const openViewDiet = useCallback(() => setShowViewDietModal(true), []);
 
-  // --- Renderizado ---
+  const handleOpenViewModal = useCallback(async () => {
+    if (!selectedDietaIdForViewing) {
+      toast({ title: "Error", description: "No hay ninguna dieta seleccionada para ver.", variant: "destructive" });
+      return;
+    }
 
-  // Loading
+    const id = Number(selectedDietaIdForViewing);
+    const dietaSeleccionada = dietas.find(d => d.id === id);
+    if (!dietaSeleccionada) return;
+
+    let comidasParaVer: ComidaDieta[] = [];
+    
+    if (dietaSeleccionada.id === activeDiet?.id) {
+      comidasParaVer = comidasPlanificadas;
+    } else {
+      const loadingToast = toast({ title: "Cargando comidas de la dieta...", duration: Infinity });
+      const res = await getComidasDietaByDieta(id);
+      dismiss(loadingToast.id);
+      if (res.ok && Array.isArray(res.data)) {
+        comidasParaVer = res.data;
+      } else {
+        toast({ title: "Error", description: "No se pudieron cargar las comidas de esa dieta.", variant: "destructive" });
+        return;
+      }
+    }
+    
+    setDataForViewModal({ dieta: dietaSeleccionada, comidas: comidasParaVer });
+    setShowViewDietModal(true);
+  }, [selectedDietaIdForViewing, dietas, activeDiet?.id, comidasPlanificadas]);
+
   if (isLoading && !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -288,7 +391,6 @@ const Dashboard = () => {
     );
   }
 
-  // Dashboard principal
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -332,9 +434,9 @@ const Dashboard = () => {
             <CardContent className="p-6 text-center">
               <Utensils className="w-8 h-8 mx-auto mb-2" />
               <div className="text-2xl font-bold">
-                {todaysComidasConsumidas.length} / {todaysComidas.length}
+                {displayedComidasConsumidas.length} / {displayedComidas.length}
               </div>
-              <div className="text-sm text-muted-foreground">Comidas de Hoy</div>
+              <div className="text-sm text-muted-foreground">Comidas de {isViewingToday ? "Hoy" : displayDateStr}</div>
             </CardContent>
           </Card>
 
@@ -357,9 +459,9 @@ const Dashboard = () => {
             <Plus className="w-4 h-4 mr-2" />
             Generar Nueva Dieta
           </Button>
-          <Button variant="outline" size="lg" onClick={openViewDiet} disabled={!activeDiet}>
+          <Button variant="outline" size="lg" onClick={handleOpenViewModal} disabled={!selectedDietaIdForViewing}>
             <Calendar className="w-4 h-4 mr-2" />
-            Ver Dieta Actual
+            Ver Dieta Seleccionada
           </Button>
           {!activeDiet && (
             <p className="text-red-500 self-center">
@@ -368,26 +470,53 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Comidas de Hoy */}
+        {/* Botón Replanificar */}
+        {hayComidasAlternativasHoy && (
+          <div className="mb-8">
+            <Button variant="destructive" size="lg" className="w-full">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Detectamos una comida alternativa. ¿Replanificar dieta?
+            </Button>
+          </div>
+        )}
+
+        {/* Comidas Planificadas */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Comidas Planificadas para Hoy ({getTodayDateString()})</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>
+                Comidas Planificadas ({isViewingToday ? "Hoy" : displayDateStr})
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={handlePrevDay} disabled={!canGoToPrevDay}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleNextDay} disabled={!canGoToNextDay}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="animate-spin" />
               </div>
-            ) : todaysComidas.length > 0 ? (
+            ) : (displayedComidas.length === 0 && displayedComidasAdicionales.length === 0) ? (
+              <p>
+                {activeDiet ? `No hay comidas planificadas para ${isViewingToday ? "hoy" : displayDateStr}.` : "No hay una dieta activa seleccionada."}
+              </p>
+            ) : (
               <div className="space-y-4">
-                {todaysComidas.map((meal) => {
-                  const isCompleted = todaysComidasConsumidas.some((c) => c.comida_dieta_id === meal.id);
+                {displayedComidas.map((meal) => {
+                  const isCompleted = displayedComidasConsumidas.some((c) => c.comida_dieta_id === meal.id);
+                  const isDisabled = !isViewingToday;
                   return (
                     <div
                       key={meal.id}
                       className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg ${
                         isCompleted ? "bg-green-50 border-green-200" : "bg-card"
-                      }`}
+                      } ${isDisabled ? "opacity-60" : ""}`}
                     >
                       <div>
                         <div className="font-semibold text-lg">
@@ -395,7 +524,6 @@ const Dashboard = () => {
                           {meal.tipo}
                         </div>
                         <p className="text-muted-foreground ml-7 sm:ml-0">{meal.descripcion}</p>
-
                         <p className="text-sm text-blue-600 font-medium ml-7 sm:ml-0">
                           {meal.calorias} kcal
                         </p>
@@ -407,10 +535,10 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <>
-                            <Button variant="outline" size="sm" onClick={() => handleMarkAsDifferent(meal)}>
+                            <Button variant="outline" size="sm" onClick={() => handleMarkAsDifferent(meal)} disabled={isDisabled}>
                               <Flag className="w-4 h-4 mr-1" /> Comí Algo Diferente
                             </Button>
-                            <Button variant="default" size="sm" onClick={() => handleMarkAsComplete(meal)}>
+                            <Button variant="default" size="sm" onClick={() => handleMarkAsComplete(meal)} disabled={isDisabled}>
                               <Check className="w-4 h-4 mr-1" /> Marcar como Completada
                             </Button>
                           </>
@@ -419,11 +547,28 @@ const Dashboard = () => {
                     </div>
                   );
                 })}
+
+                {displayedComidasAdicionales.map((meal) => (
+                  <div
+                    key={`adicional-${meal.id}`}
+                    className="flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg bg-yellow-50 border-yellow-200"
+                  >
+                    <div>
+                      <div className="font-semibold text-lg">
+                        <Plus className="w-5 h-5 mr-2 inline text-yellow-600" />
+                        Comida Adicional
+                      </div>
+                      <p className="text-muted-foreground ml-7 sm:ml-0">{meal.descripcion}</p>
+                      <p className="text-sm text-blue-600 font-medium ml-7 sm:ml-0">
+                        {meal.calorias} kcal
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-yellow-100 text-yellow-700 font-medium mt-3 sm:mt-0">
+                      <Check /> Registrada
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <p>
-                {activeDiet ? "No hay comidas planificadas para hoy." : "No hay una dieta activa seleccionada."}
-              </p>
             )}
           </CardContent>
         </Card>
@@ -435,35 +580,43 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {dietas.length > 0 ? (
-              <div className="space-y-4">
-                {dietas.map((dieta) => (
-                  <div
-                    key={dieta.id}
-                    className="flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg"
-                  >
-                    <div>
-                      <div className="font-semibold text-lg">
-                        Dieta del {dieta.fecha_inicio} al {dieta.fecha_fin}
+              <RadioGroup
+                value={selectedDietaIdForViewing ?? ""}
+                onValueChange={setSelectedDietaIdForViewing}
+              >
+                <div className="space-y-4">
+                  {dietas.map((dieta) => (
+                    <div
+                      key={dieta.id}
+                      className="flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <RadioGroupItem value={String(dieta.id)} id={`radio-${dieta.id}`} />
+                        <Label htmlFor={`radio-${dieta.id}`} className="cursor-pointer">
+                          <div className="font-semibold text-lg">
+                            Dieta del {dieta.fecha_inicio} al {dieta.fecha_fin}
+                          </div>
+                          <p className="text-muted-foreground">
+                            Origen: {dieta.origen} | Estado:{" "}
+                            <span className={`font-medium ${dieta.estado === "activa" ? "text-green-600" : "text-gray-500"}`}>
+                              {dieta.estado}
+                            </span>
+                          </p>
+                        </Label>
                       </div>
-                      <p className="text-muted-foreground">
-                        Origen: {dieta.origen} | Estado:{" "}
-                        <span className={`font-medium ${dieta.estado === "activa" ? "text-green-600" : "text-gray-500"}`}>
-                          {dieta.estado}
-                        </span>
-                      </p>
+                      {dieta.estado !== "activa" ? (
+                        <Button variant="outline" size="sm" onClick={() => handleActivateDiet(dieta.id)} className="mt-3 sm:mt-0 sm:ml-4">
+                          Activar esta dieta
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2 p-2 rounded-md bg-green-100 text-green-700 font-medium mt-3 sm:mt-0 sm:ml-4">
+                          <Check /> Activa
+                        </div>
+                      )}
                     </div>
-                    {dieta.estado !== "activa" ? (
-                      <Button variant="outline" size="sm" onClick={() => handleActivateDiet(dieta.id)} className="mt-3 sm:mt-0">
-                        Activar esta dieta
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-2 p-2 rounded-md bg-green-100 text-green-700 font-medium mt-3 sm:mt-0">
-                        <Check /> Activa
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </RadioGroup>
             ) : (
               <p>No has generado ninguna dieta todavía.</p>
             )}
@@ -471,7 +624,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Footer */}
       <Footer />
 
       {/* Modales */}
@@ -481,7 +633,7 @@ const Dashboard = () => {
           onClose={() => setShowGenerateDietModal(false)}
           onDietaCreada={() => {
             setShowGenerateDietModal(false);
-            loadData(); // Recargar todo
+            loadData();
           }}
         />
       )}
@@ -492,17 +644,18 @@ const Dashboard = () => {
           onClose={() => setShowAddFoodModal(false)}
           onSaved={() => {
             setShowAddFoodModal(false);
-            loadData(); // Recargar todo
+            loadData();
           }}
+          activeDiet={activeDiet}
         />
       )}
 
-      {showViewDietModal && activeDiet && (
+      {showViewDietModal && dataForViewModal && (
         <ViewDietModal
           isOpen={showViewDietModal}
           onClose={() => setShowViewDietModal(false)}
-          dieta={activeDiet}
-          comidas={comidasPlanificadas}
+          dieta={dataForViewModal.dieta}
+          comidas={dataForViewModal.comidas}
         />
       )}
 
@@ -513,13 +666,12 @@ const Dashboard = () => {
           comidaPlanificada={mealToAdjust}
           profile={profile}
           onComidaAlternativaGuardada={async (comidaAlternativa) => {
-            // 1. Guardar la comida alternativa (opcion: 'alternativa')
             try {
               const payload = {
                 ...comidaAlternativa,
                 usuario_id: usuario!.id,
                 comida_dieta_id: mealToAdjust.id,
-                fecha: getTodayDateString(),
+                fecha: todayStr,
                 opcion: "alternativa",
               };
               const res = await createComidaUsuario(payload);
@@ -528,7 +680,6 @@ const Dashboard = () => {
               toast({ title: "Comida alternativa guardada" });
               setShowAdjustMealModal(false);
 
-              // 2. Llamar a la IA para re-ajustar el plan
               try {
                 const toastAjuste = toast({
                   title: "Ajustando dieta con IA...",
@@ -536,17 +687,16 @@ const Dashboard = () => {
                   duration: Infinity,
                 });
 
-                // Filtro: Comidas futuras (mayores a hoyStr)
                 const comidasRestantes = comidasPlanificadas.filter((c) => c.fecha && c.fecha > todayStr);
 
                 if (comidasRestantes.length === 0) {
                   dismiss(toastAjuste.id);
                   toast({ title: "No hay comidas futuras", description: "No hay nada que re-ajustar." });
-                  loadData(); // Recargar datos de hoy
+                  loadData();
                   return;
                 }
 
-                const resIA = await adjustDietWithIA(comidaAlternativa, comidasRestantes, profile);
+                const resIA = await adjustDietWithIA(comidaAlternativa, comidasRestantes, profile!);
 
                 if (!resIA.ok || !Array.isArray(resIA.data)) {
                   dismiss(toastAjuste.id);
@@ -557,7 +707,6 @@ const Dashboard = () => {
                     duration: 5000,
                   });
                 } else {
-                  // Bucle para actualizar comidas en Laravel
                   const comidasAjustadas: ComidaDieta[] = resIA.data;
                   toast({
                     title: `Actualizando ${comidasAjustadas.length} comidas...`,
@@ -567,6 +716,7 @@ const Dashboard = () => {
                   });
 
                   let errores = 0;
+
                   for (const comida of comidasAjustadas) {
                     const payloadUpdate = {
                       descripcion: comida.descripcion,
@@ -575,6 +725,7 @@ const Dashboard = () => {
                       carbohidratos: comida.carbohidratos,
                       grasas: comida.grasas,
                     };
+
                     const resUpdate = await updateComidaDieta(comida.id, payloadUpdate);
                     if (!resUpdate.ok) {
                       console.error(`Error actualizando comida ${comida.id}`, resUpdate.data);
@@ -594,10 +745,10 @@ const Dashboard = () => {
                   }
                 }
               } catch (err) {
+                dismiss(toastAjuste.id);
                 toast({ title: "Error de IA", description: (err as Error).message, variant: "destructive" });
               }
 
-              // 3. Recargar datos
               loadData();
             } catch (err) {
               toast({ title: "Error", description: (err as Error).message, variant: "destructive" });
