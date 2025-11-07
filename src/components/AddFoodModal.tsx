@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { analyzeFood } from "@/services/iaService";
-import { createComidaUsuario } from "@/services/foodService";
-import { createComidaDieta } from "@/services/dietService";
-import { useAuth } from "@/hooks/useAuth";
-import type { ComidaUsuario, Dieta } from "@/types";
+import { useToast } from "../hooks/use-toast";
+import { analyzeFood } from "../services/iaService";
+import { createComidaUsuario } from "../services/foodService";
+import { createComidaDieta } from "../services/dietService";
+import { useAuth } from "../hooks/useAuth";
+import type { ComidaUsuario, Dieta } from "../types";
 
 interface AddFoodModalProps {
   isOpen: boolean;
@@ -45,7 +45,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
-  // Campos editables
+  // Campos editables (se rellenan automáticamente después del análisis)
   const [descEdit, setDescEdit] = useState("");
   const [calEdit, setCalEdit] = useState<number | "">("");
   const [protEdit, setProtEdit] = useState<number | "">("");
@@ -141,7 +141,6 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
     }
   };
 
-  // Lógica de guardado (flujo de 2 pasos)
   const handleSave = async () => {
     if (!usuario) {
       toast({ title: "Error", description: "Debes iniciar sesión", variant: "destructive" });
@@ -172,7 +171,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
 
     setSaving(true);
     try {
-      // Paso 1: Crear la entrada en 'comida_dieta'
+      // PASO 1: Crear la entrada en 'comida_dieta'
       const comidaDietaPayload = {
         dieta_id: activeDiet.id,
         fecha: fecha,
@@ -190,12 +189,13 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         throw new Error(resDieta.data?.message || "Error al crear la comida en el plan de dieta (Paso 1)");
       }
 
-      const newComidaDietaId = (resDieta.data as any).id;
+      const newComidaDietaId = (resDieta.data as any)?.comida?.id;
+      
       if (!newComidaDietaId) {
         throw new Error("El backend no devolvió un ID para la nueva comida de dieta (Paso 1)");
       }
 
-      // Paso 2: Crear la entrada en 'comida_usuario' (log)
+      // PASO 2: Crear la entrada en 'comida_usuario' (log)
       const comidaUsuarioPayload: Omit<ComidaUsuario, "id"> = {
         usuario_id: usuario.id,
         fecha: fecha, 
