@@ -81,6 +81,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
 
       Devuelve SOLAMENTE un objeto JSON válido. El objeto debe tener una clave raíz "dias".
       "dias" debe ser un array de objetos, uno por cada día desde la fecha de inicio hasta la de fin.
+      Los tipos de comidas habilitados son los siguientes: ['desayuno','almuerzo','cena','snack', 'merienda', 'colacion', 'media mañana', 'media tarde', 'post cena', 'postre'].
       
       Cada objeto de día debe tener:
       1. "fecha": (string en formato "YYYY-MM-DD")

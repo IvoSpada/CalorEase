@@ -28,6 +28,58 @@ const getDateStringFromLocal = (local: string): string => {
   return local.split('T')[0];
 }
 
+/**
+ * Helper mejorado para extraer y parsear la respuesta de Gemini
+ */
+const parseGeminiResponse = (data: any): any | null => {
+  console.log("🔍 Parseando respuesta Gemini:", data);
+  
+  // Si viene directo como objeto con los campos
+  if (data && typeof data === 'object' && 'descripcion' in data) {
+    console.log("✅ Respuesta directa como objeto");
+    return data;
+  }
+  
+  // Si viene envuelto en .data
+  if (data?.data) {
+    if (typeof data.data === 'string') {
+      return parseGeminiResponse(data.data);
+    }
+    if (typeof data.data === 'object') {
+      return parseGeminiResponse(data.data);
+    }
+  }
+  
+  // Si es un string, intentar extraer JSON
+  if (typeof data === 'string') {
+    console.log("🔍 Intentando extraer JSON de string:", data.substring(0, 100));
+    
+    // Eliminar bloques de código markdown (```json ... ```)
+    let cleaned = data.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Buscar el primer { y el último }
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
+      console.log("🔍 JSON extraído:", jsonStr);
+      
+      try {
+        const parsed = JSON.parse(jsonStr);
+        console.log("✅ JSON parseado exitosamente:", parsed);
+        return parsed;
+      } catch (e) {
+        console.error("❌ Error parseando JSON:", e);
+        return null;
+      }
+    }
+  }
+  
+  console.log("❌ No se pudo parsear la respuesta");
+  return null;
+};
+
 export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodModalProps) => {
   const { usuario } = useAuth();
   const { toast } = useToast();
@@ -45,7 +97,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
   const [analyzing, setAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
 
-  // Campos editables (se rellenan automáticamente después del análisis)
+  // Campos editables
   const [descEdit, setDescEdit] = useState("");
   const [calEdit, setCalEdit] = useState<number | "">("");
   const [protEdit, setProtEdit] = useState<number | "">("");
@@ -89,6 +141,8 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         objetivo: usuario.objetivo,
       } : undefined);
 
+      console.log("📦 Respuesta completa de analyzeFood:", r);
+
       if (!r.ok || !r.data) {
         toast({
           title: "Error IA",
@@ -98,43 +152,41 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         return;
       }
 
-      let dataToParse: any = r.data;
+      // Usar la nueva función de parsing mejorada
+      const parsedData = parseGeminiResponse(r.data);
       
-      if (dataToParse.data && typeof dataToParse.data === 'string') {
-        dataToParse = dataToParse.data;
+      if (!parsedData) {
+        toast({ 
+          title: "Respuesta IA no reconocida", 
+          description: "No se pudo extraer datos válidos de la respuesta de Gemini.", 
+          variant: "destructive" 
+        });
+        return;
       }
+
+      // Asignar valores con conversión segura a números
+      setDescEdit(parsedData.descripcion ?? foodText);
       
-      if (typeof dataToParse === 'string') {
-        const jsonMatch = dataToParse.match(/\{[\s\S]*\}/);
-        if (jsonMatch && jsonMatch[0]) {
-          try {
-            const parsedJson = JSON.parse(jsonMatch[0]);
-            setDescEdit(parsedJson.descripcion ?? foodText);
-            setCalEdit(Number.isFinite(Number(parsedJson.calorias)) ? Number(parsedJson.calorias) : "");
-            setProtEdit(Number.isFinite(Number(parsedJson.proteinas)) ? Number(parsedJson.proteinas) : "");
-            setCarbEdit(Number.isFinite(Number(parsedJson.carbohidratos)) ? Number(parsedJson.carbohidratos) : "");
-            setGrasEdit(Number.isFinite(Number(parsedJson.grasas)) ? Number(parsedJson.grasas) : "");
-            setHasAnalyzed(true);
-          } catch (e) {
-            console.error("Error al parsear JSON extraído:", e);
-            toast({ title: "Respuesta IA no reconocida", description: "No se pudo extraer datos JSON de la IA.", variant: "destructive", duration: 7000 });
-          }
-        } else {
-          toast({ title: "Respuesta IA no reconocida", description: "No se encontró JSON en la respuesta de la IA.", variant: "destructive" });
-        }
-      } else if (typeof dataToParse === 'object' && dataToParse !== null) {
-        setDescEdit(dataToParse.descripcion ?? foodText);
-        setCalEdit(Number.isFinite(Number(dataToParse.calorias)) ? Number(dataToParse.calorias) : "");
-        setProtEdit(Number.isFinite(Number(dataToParse.proteinas)) ? Number(dataToParse.proteinas) : "");
-        setCarbEdit(Number.isFinite(Number(dataToParse.carbohidratos)) ? Number(dataToParse.carbohidratos) : "");
-        setGrasEdit(Number.isFinite(Number(dataToParse.grasas)) ? Number(dataToParse.grasas) : "");
-        setHasAnalyzed(true);
-      } else {
-        toast({ title: "Respuesta IA no reconocida", description: "La respuesta de la IA no fue un string o un objeto.", variant: "destructive" });
-      }
+      const calorias = parsedData.calorias;
+      const proteinas = parsedData.proteinas;
+      const carbohidratos = parsedData.carbohidratos;
+      const grasas = parsedData.grasas;
+      
+      setCalEdit(calorias !== null && calorias !== undefined && !isNaN(Number(calorias)) ? Number(calorias) : "");
+      setProtEdit(proteinas !== null && proteinas !== undefined && !isNaN(Number(proteinas)) ? Number(proteinas) : "");
+      setCarbEdit(carbohidratos !== null && carbohidratos !== undefined && !isNaN(Number(carbohidratos)) ? Number(carbohidratos) : "");
+      setGrasEdit(grasas !== null && grasas !== undefined && !isNaN(Number(grasas)) ? Number(grasas) : "");
+      
+      setHasAnalyzed(true);
+      
+      toast({ 
+        title: "✅ Análisis completado", 
+        description: "Los valores nutricionales se han cargado correctamente.",
+        variant: "default"
+      });
       
     } catch (err) {
-      console.error("Error al analizar con IA:", err);
+      console.error("❌ Error al analizar con IA:", err);
       toast({ title: "Error", description: "Fallo al conectar con el servicio de IA", variant: "destructive" });
     } finally {
       setAnalyzing(false);
@@ -267,6 +319,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
                   <option value="desayuno">Desayuno</option>
                   <option value="almuerzo">Almuerzo</option>
                   <option value="cena">Cena</option>
+                  <option value="cena">Colacion</option>
                 </select>
               </div>
             </div>
@@ -300,19 +353,35 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Calorías</Label>
-                      <Input type="number" value={calEdit === "" ? "" : String(calEdit)} onChange={(e) => setCalEdit(e.target.value === "" ? "" : Number(e.target.value))} />
+                      <Input 
+                        type="number" 
+                        value={calEdit === "" ? "" : String(calEdit)} 
+                        onChange={(e) => setCalEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                      />
                     </div>
                     <div>
                       <Label>Proteínas (g)</Label>
-                      <Input type="number" value={protEdit === "" ? "" : String(protEdit)} onChange={(e) => setProtEdit(e.target.value === "" ? "" : Number(e.target.value))} />
+                      <Input 
+                        type="number" 
+                        value={protEdit === "" ? "" : String(protEdit)} 
+                        onChange={(e) => setProtEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                      />
                     </div>
                     <div>
                       <Label>Carbohidratos (g)</Label>
-                      <Input type="number" value={carbEdit === "" ? "" : String(carbEdit)} onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.target.value))} />
+                      <Input 
+                        type="number" 
+                        value={carbEdit === "" ? "" : String(carbEdit)} 
+                        onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                      />
                     </div>
                     <div>
                       <Label>Grasas (g)</Label>
-                      <Input type="number" value={grasEdit === "" ? "" : String(grasEdit)} onChange={(e) => setGrasEdit(e.target.value === "" ? "" : Number(e.target.value))} />
+                      <Input 
+                        type="number" 
+                        value={grasEdit === "" ? "" : String(grasEdit)} 
+                        onChange={(e) => setGrasEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                      />
                     </div>
                   </div>
                 </div>
