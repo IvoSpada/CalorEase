@@ -1,6 +1,6 @@
 // src/components/UserMenu.tsx
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, LogOut, User as UserIcon, Target } from "lucide-react";
+import { ChevronDown, LogOut, User as UserIcon, Target, Home } from "lucide-react";
 
 type Props = {
   profile?: { nombre?: string; email?: string; [k: string]: any } | null;
@@ -57,9 +57,9 @@ export default function UserMenu({ profile, onLogout, className = "" }: Props) {
         >
           <button
             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800"
-            onClick={() => (window.location.href = "/profile")}
+            onClick={() => (window.location.href = "/")}
           >
-            <UserIcon className="w-4 h-4" /> Perfil
+            <Home className="w-4 h-4" /> Inicio
           </button>
 
           <button
@@ -67,6 +67,13 @@ export default function UserMenu({ profile, onLogout, className = "" }: Props) {
             onClick={() => (window.location.href = "/dashboard")}
           >
             <Target className="w-4 h-4" /> Dashboard
+          </button>
+
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800"
+            onClick={() => (window.location.href = "/profile")}
+          >
+            <UserIcon className="w-4 h-4" /> Perfil
           </button>
 
           <div className="border-t my-1" />

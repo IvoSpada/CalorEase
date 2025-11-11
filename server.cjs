@@ -145,10 +145,10 @@ const API_KEY = process.env.GEMINI_API_KEY;
  * - intervalCap: 1 = máximo 1 petición por segundo
  */
 const geminiQueue = new PQueue({
-  concurrency: 1,        // Solo 1 petición a la vez (cambia a 2-3 si quieres más velocidad)
+  concurrency: 3,        // Solo 1 petición a la vez (cambia a 2-3 si quieres más velocidad)
   interval: 1000,        // Ventana de 1 segundo
-  intervalCap: 1,        // Máximo 2 peticiones por segundo
-  timeout: 60000,        // Timeout de 60 segundos por petición
+  intervalCap: 1,        // Máximo 1 peticion por segundo
+  timeout: 240000,        // Timeout de 60 segundos por petición
   throwOnTimeout: true
 });
 

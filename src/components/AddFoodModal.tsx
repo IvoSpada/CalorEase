@@ -132,7 +132,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
     setHasAnalyzed(false);
 
     try {
-      const prompt = `Analiza la siguiente comida: "${foodText}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida, ej: "Milanesa con papas"), "calorias", "proteinas", "carbohidratos", y "grasas".`;
+      const prompt = `Analiza la siguiente comida: "${foodText}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida, ej: "Milanesa con papas"), "calorias", "proteinas", "carbohidratos", y "grasas". Si no puedes estimar un valor nutricional, usa null.`;
       
       const r = await analyzeFood(prompt, usuario ? {
         peso: usuario.peso,
@@ -281,52 +281,65 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl bg-card border-border">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold">Agregar y Registrar Comida</DialogTitle>
+          <DialogTitle className="text-center text-xl sm:text-2xl font-bold">
+            Agregar y Registrar Comida
+          </DialogTitle>
         </DialogHeader>
 
         <Card className="border-0 shadow-none">
-          <CardContent className="p-4 space-y-4">
+          <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div>
-              <Label>Descripción de la comida</Label>
+              <Label className="text-sm">Descripción de la comida</Label>
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Ej: Dos porciones de pizza y una gaseosa"
-                className="h-24"
+                className="h-20 sm:h-24 text-sm"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>Fecha y hora</Label>
+                <Label className="text-sm">Fecha y hora</Label>
                 <Input
                   type="datetime-local"
                   value={fechaLocal}
                   onChange={(e) => setFechaLocal(e.target.value)}
+                  className="text-sm"
                 />
               </div>
 
               <div>
-                <Label>Tipo de Comida</Label>
+                <Label className="text-sm">Tipo de Comida</Label>
                 <select
                   value={tipoComida}
                   onChange={(e) => setTipoComida(e.target.value)}
-                  className="w-full h-10 rounded-md border px-3"
+                  className="w-full h-10 rounded-md border px-3 text-sm"
                 >
                   <option value="snack">Snack / Adicional</option>
                   <option value="desayuno">Desayuno</option>
                   <option value="almuerzo">Almuerzo</option>
                   <option value="cena">Cena</option>
-                  <option value="cena">Colacion</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={handleAnalyze} disabled={analyzing}>
-                {analyzing ? <><Loader2 className="animate-spin mr-2" size={16} /> Analizando...</> : "Analizar con IA"}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Button 
+                onClick={handleAnalyze} 
+                disabled={analyzing}
+                className="w-full sm:w-auto text-sm"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2" size={16} /> 
+                    Analizando...
+                  </>
+                ) : (
+                  "Analizar con IA"
+                )}
               </Button>
 
               <Button 
@@ -334,53 +347,70 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
                 onClick={handleSave} 
                 disabled={saving || !hasAnalyzed || !activeDiet}
                 title={!hasAnalyzed ? "Debes analizar la comida con IA antes de guardar" : !activeDiet ? "No hay dieta activa" : "Guardar comida"}
+                className="w-full sm:w-auto text-sm"
               >
                 {saving ? <Loader2 className="animate-spin" size={16} /> : "Guardar comida"}
               </Button>
 
-              <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+              <Button 
+                variant="ghost" 
+                onClick={onClose}
+                className="w-full sm:w-auto text-sm"
+              >
+                Cancelar
+              </Button>
             </div>
 
             {hasAnalyzed && (
               <div className="pt-2">
-                <h4 className="font-semibold mb-3">Información Nutricional (editable)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <h4 className="font-semibold mb-3 text-sm sm:text-base">
+                  Información Nutricional (editable)
+                </h4>
+                <div className="space-y-3">
                   <div>
-                    <Label>Descripción</Label>
-                    <Input value={descEdit} onChange={(e) => setDescEdit(e.target.value)} />
+                    <Label className="text-sm">Descripción</Label>
+                    <Input 
+                      value={descEdit} 
+                      onChange={(e) => setDescEdit(e.target.value)}
+                      className="text-sm"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <div>
-                      <Label>Calorías</Label>
+                      <Label className="text-sm">Calorías</Label>
                       <Input 
                         type="number" 
                         value={calEdit === "" ? "" : String(calEdit)} 
-                        onChange={(e) => setCalEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                        onChange={(e) => setCalEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                        className="text-sm"
                       />
                     </div>
                     <div>
-                      <Label>Proteínas (g)</Label>
+                      <Label className="text-sm">Proteínas (g)</Label>
                       <Input 
                         type="number" 
                         value={protEdit === "" ? "" : String(protEdit)} 
-                        onChange={(e) => setProtEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                        onChange={(e) => setProtEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                        className="text-sm"
                       />
                     </div>
                     <div>
-                      <Label>Carbohidratos (g)</Label>
+                      <Label className="text-sm">Carbohidratos (g)</Label>
                       <Input 
                         type="number" 
                         value={carbEdit === "" ? "" : String(carbEdit)} 
-                        onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                        onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                        className="text-sm"
                       />
                     </div>
                     <div>
-                      <Label>Grasas (g)</Label>
+                      <Label className="text-sm">Grasas (g)</Label>
                       <Input 
                         type="number" 
                         value={grasEdit === "" ? "" : String(grasEdit)} 
-                        onChange={(e) => setGrasEdit(e.target.value === "" ? "" : Number(e.target.value))} 
+                        onChange={(e) => setGrasEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                        className="text-sm"
                       />
                     </div>
                   </div>

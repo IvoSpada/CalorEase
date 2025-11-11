@@ -34,6 +34,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart,
+  AlertTriangle,
 } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import type { Dieta, ComidaDieta, ComidaUsuario, Profile } from "@/types";
@@ -87,7 +88,7 @@ const Dashboard = () => {
   const [todayStr, setTodayStr] = useState(getFormattedDateString(new Date()));
   const [displayDate, setDisplayDate] = useState(new Date());
 
-  // Actualizar 'todayStr' si el día cambia (ej. a medianoche)
+  // Actualizar 'todayStr' si el día cambia
   useEffect(() => {
     const interval = setInterval(() => {
       const newToday = getFormattedDateString(new Date());
@@ -98,32 +99,20 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [todayStr]);
 
-  /**
-   * Carga todos los datos del dashboard desde cero
-   */
   const loadData = useCallback(async () => {
     if (!usuario?.id) return;
-
     setIsLoading(true);
     try {
-      // 1. Obtener perfil
       const meRes = await api.get("/me", true);
-      if (meRes.ok) {
-        setProfile(meRes.data);
-      } else {
-        throw new Error("No se pudo obtener el perfil del usuario");
-      }
+      if (meRes.ok) setProfile(meRes.data);
+      else throw new Error("No se pudo obtener el perfil del usuario");
 
-      // 2. Obtener dietas
       const dietasRes = await getDietas(usuario.id);
       let currentActiveDiet: Dieta | null = null;
       if (dietasRes.ok && Array.isArray(dietasRes.data)) {
         setDietas(dietasRes.data);
-        currentActiveDiet =
-          dietasRes.data.find((d) => d.estado && d.estado.trim().toLowerCase() === "activa") ??
-          null;
+        currentActiveDiet = dietasRes.data.find((d) => d.estado === "activa") ?? null;
         setActiveDiet(currentActiveDiet);
-
         if (!selectedDietaIdForViewing && currentActiveDiet) {
           setSelectedDietaIdForViewing(String(currentActiveDiet.id));
         }
@@ -132,7 +121,6 @@ const Dashboard = () => {
         setActiveDiet(null);
       }
 
-      // 3. Obtener comidas planificadas (solo si hay dieta activa)
       if (currentActiveDiet) {
         const comidasPlanRes = await getComidasDietaByDieta(currentActiveDiet.id);
         if (comidasPlanRes.ok && Array.isArray(comidasPlanRes.data)) {
@@ -144,7 +132,6 @@ const Dashboard = () => {
         setComidasPlanificadas([]);
       }
 
-      // 4. Obtener comidas ya consumidas
       const comidasConsRes = await getComidasUsuario(usuario.id);
       if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
         setComidasConsumidas(comidasConsRes.data);
@@ -153,17 +140,12 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Error cargando datos del dashboard", err);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos del dashboard.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "No se pudieron cargar los datos.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   }, [usuario?.id, selectedDietaIdForViewing]);
 
-  // Carga inicial y recarga cuando cambia el login
   useEffect(() => {
     if (isLoggedIn && usuario?.id) {
       loadData();
@@ -178,16 +160,13 @@ const Dashboard = () => {
     }
   }, [isLoggedIn, usuario?.id, loadData]);
 
-  // String de la fecha que se está mostrando
   const displayDateStr = useMemo(() => getFormattedDateString(displayDate), [displayDate]);
 
-  // Comidas planificadas filtradas por el día que se está mostrando
   const displayedComidas = useMemo(() => {
     if (!activeDiet || !comidasPlanificadas) return [];
     return comidasPlanificadas.filter((c) => c.fecha && c.fecha === displayDateStr);
   }, [activeDiet, comidasPlanificadas, displayDateStr]);
 
-  // Comidas consumidas filtradas por el día que se está mostrando
   const displayedComidasConsumidas = useMemo(() => {
     if (!comidasConsumidas) return [];
     return comidasConsumidas.filter((c) =>
@@ -195,7 +174,6 @@ const Dashboard = () => {
     );
   }, [comidasConsumidas, displayDateStr]);
 
-  // Comidas adicionales (no planificadas)
   const displayedComidasAdicionales = useMemo(() => {
     if (!comidasConsumidas) return [];
     return comidasConsumidas.filter((c) =>
@@ -203,15 +181,12 @@ const Dashboard = () => {
     );
   }, [comidasConsumidas, displayDateStr]);
 
-  // Verificar si hay comidas alternativas hoy
   const hayComidasAlternativasHoy = useMemo(() => {
     if (!comidasConsumidas) return false;
     return comidasConsumidas.some((c) =>
       c.fecha === displayDateStr && c.opcion === "alternativa"
     );
   }, [comidasConsumidas, displayDateStr]);
-
-  // --- CÁLCULO DE CALORÍAS ---
 
   const sumCalorias = (comidas: { calorias?: number | null }[]) => {
     return comidas.reduce((acc, comida) => acc + (Number(comida.calorias) || 0), 0);
@@ -264,23 +239,15 @@ const Dashboard = () => {
   }, [displayDate, activeDiet?.fecha_fin]);
 
   const handlePrevDay = () => {
-    if (canGoToPrevDay) {
-      setDisplayDate((prev) => addDays(prev, -1));
-    }
+    if (canGoToPrevDay) setDisplayDate((prev) => addDays(prev, -1));
   };
 
   const handleNextDay = () => {
-    if (canGoToNextDay) {
-      setDisplayDate((prev) => addDays(prev, 1));
-    }
+    if (canGoToNextDay) setDisplayDate((prev) => addDays(prev, 1));
   };
 
   const handleLogout = useCallback(async () => {
-    const loadingToast = toast({
-      title: "Cerrando sesión...",
-      description: <Loader2 className="animate-spin" />,
-      duration: Infinity,
-    });
+    const loadingToast = toast({ title: "Cerrando sesión...", description: <Loader2 className="animate-spin" />, duration: Infinity });
     try {
       await logout();
       dismiss(loadingToast.id);
@@ -295,9 +262,8 @@ const Dashboard = () => {
   const handleMarkAsComplete = useCallback(
     async (comida: ComidaDieta) => {
       if (!usuario?.id || !isViewingToday) return;
-
       try {
-        const payload = {
+        const payload: Omit<ComidaUsuario, "id"> = {
           usuario_id: usuario.id,
           comida_dieta_id: comida.id,
           fecha: todayStr,
@@ -308,26 +274,16 @@ const Dashboard = () => {
           carbohidratos: comida.carbohidratos,
           grasas: comida.grasas,
         };
-
         const res = await createComidaUsuario(payload);
-        if (!res.ok) {
-          console.error("Error al crear ComidaUsuario:", res.data);
-          throw new Error(res.data?.message || "No se pudo guardar la comida");
-        }
-
+        if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida");
         toast({ title: "¡Comida Completada!", description: comida.descripcion, variant: "default" });
-
         const comidasConsRes = await getComidasUsuario(usuario.id);
         if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
           setComidasConsumidas(comidasConsRes.data);
         }
       } catch (err) {
         console.error("Error marcando comida como completada", err);
-        toast({
-          title: "Error",
-          description: (err as Error).message || "No se pudo marcar la comida",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: (err as Error).message || "No se pudo marcar la comida", variant: "destructive" });
       }
     },
     [usuario?.id, todayStr, isViewingToday]
@@ -341,31 +297,21 @@ const Dashboard = () => {
 
   const handleActivateDiet = useCallback(
     async (dietaId: number) => {
-      const loadingToast = toast({
-        title: "Cambiando de dieta...",
-        description: <Loader2 className="animate-spin" />,
-        duration: Infinity,
-      });
+      const loadingToast = toast({ title: "Cambiando de dieta...", description: <Loader2 className="animate-spin" />, duration: Infinity });
       try {
         const res = await updateDieta(dietaId, { estado: "activa" });
         if (!res.ok) throw new Error("No se pudo activar la nueva dieta");
-
         const otrasDietas = dietas.filter((d) => d.id !== dietaId && d.estado === "activa");
         for (const dieta of otrasDietas) {
           await updateDieta(dieta.id, { estado: "finalizada" });
         }
-
         setDisplayDate(new Date());
         await loadData();
         dismiss(loadingToast.id);
       } catch (err) {
         console.error("Error activando dieta", err);
         dismiss(loadingToast.id);
-        toast({
-          title: "Error",
-          description: (err as Error).message || "No se pudo cambiar de dieta",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: (err as Error).message || "No se pudo cambiar de dieta", variant: "destructive" });
       }
     },
     [dietas, loadData]
@@ -379,13 +325,10 @@ const Dashboard = () => {
       toast({ title: "Error", description: "No hay ninguna dieta seleccionada para ver.", variant: "destructive" });
       return;
     }
-
     const id = Number(selectedDietaIdForViewing);
     const dietaSeleccionada = dietas.find(d => d.id === id);
     if (!dietaSeleccionada) return;
-
     let comidasParaVer: ComidaDieta[] = [];
-
     if (dietaSeleccionada.id === activeDiet?.id) {
       comidasParaVer = comidasPlanificadas;
     } else {
@@ -399,7 +342,6 @@ const Dashboard = () => {
         return;
       }
     }
-
     setDataForViewModal({ dieta: dietaSeleccionada, comidas: comidasParaVer });
     setShowViewDietModal(true);
   }, [selectedDietaIdForViewing, dietas, activeDiet?.id, comidasPlanificadas]);
@@ -439,7 +381,7 @@ const Dashboard = () => {
           Tu Resumen, <span className="text-primary">{profile?.nombre ?? "Usuario"}</span>
         </h1>
 
-        {/* RESUMEN DE CALORÍAS */}
+        {/* Resumen de Calorías */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="p-6 text-center">
@@ -454,7 +396,7 @@ const Dashboard = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <Utensils className="w-8 h-8 mx-auto mb-2 text-green-600" />
-              <div className="text-2xl font-bold">
+              <div className={`text-2xl font-bold ${caloriasDiariasIngeridas > caloriasDiariasPlanificadas ? 'text-red-500' : ''}`}>
                 {caloriasDiariasIngeridas} / {caloriasDiariasPlanificadas}
               </div>
               <div className="text-sm text-muted-foreground">Calorías (Ingeridas / Plan) - {isViewingToday ? "Hoy" : displayDateStr}</div>
@@ -464,7 +406,7 @@ const Dashboard = () => {
           <Card>
             <CardContent className="p-6 text-center">
               <Calendar className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <div className="text-2xl font-bold">
+              <div className={`text-2xl font-bold ${caloriasTotalesIngeridas > caloriasTotalesPlanificadas ? 'text-red-500' : ''}`}>
                 {caloriasTotalesIngeridas} / {caloriasTotalesPlanificadas}
               </div>
               <div className="text-sm text-muted-foreground">Calorías (Ingeridas / Plan) - Dieta Total</div>
@@ -497,7 +439,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* BOTÓN REPLANIFICAR */}
+        {/* Botón Replanificar */}
         {hayComidasAlternativasHoy && (
           <div className="mb-8">
             {/* <Button variant="destructive" size="lg" className="w-full">
@@ -536,37 +478,66 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {displayedComidas.map((meal) => {
-                  const isCompleted = displayedComidasConsumidas.some((c) => c.comida_dieta_id === meal.id);
+                  const consumedEntry = displayedComidasConsumidas.find((c) => c.comida_dieta_id === meal.id);
+                  const isCompleted = !!consumedEntry;
+                  const isAlternative = consumedEntry?.opcion === 'alternativa';
                   const isDisabled = !isViewingToday;
+
+                  const displayData = isAlternative ? consumedEntry : meal;
+
+                  let cardClass = "bg-card";
+                  if (isCompleted && !isAlternative) cardClass = "bg-green-50 border-green-200";
+                  if (isAlternative) cardClass = "bg-red-50 border-red-200";
+                  if (isDisabled) cardClass += " opacity-60";
+
                   return (
                     <div
                       key={meal.id}
-                      className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg ${
-                        isCompleted ? "bg-green-50 border-green-200" : "bg-card"
-                      } ${isDisabled ? "opacity-60" : ""}`}
+                      className={`flex flex-col sm:flex-row justify-between sm:items-center p-4 border rounded-lg ${cardClass}`}
                     >
                       <div>
                         <div className="font-semibold text-lg">
-                          {isCompleted && <CheckCircle className="w-5 h-5 mr-2 inline text-green-600" />}
-                          {meal.tipo}
+                          {isCompleted && !isAlternative && <CheckCircle className="w-5 h-5 mr-2 inline text-green-600" />}
+                          {isAlternative && <AlertTriangle className="w-5 h-5 mr-2 inline text-red-600" />}
+                          {displayData.tipo} {isAlternative && "(Alternativa)"}
                         </div>
-                        <p className="text-muted-foreground ml-7 sm:ml-0">{meal.descripcion}</p>
-                        <p className="text-sm text-blue-600 font-medium ml-7 sm:ml-0">
-                          {meal.calorias} kcal
+                        <p className="text-muted-foreground ml-7 sm:ml-0">{displayData.descripcion}</p>
+                        <p className={`text-sm font-medium ml-7 sm:ml-0 ${isAlternative ? 'text-red-600' : 'text-blue-600'}`}>
+                          {displayData.calorias} kcal
+                          {isAlternative && (
+                            <span className="text-xs text-muted-foreground line-through ml-2">Plan: {meal.calorias} kcal</span>
+                          )}
                         </p>
                       </div>
-                      <div className="flex gap-2 mt-3 sm:mt-0 self-end sm:self-center">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-0 w-full sm:w-auto">
                         {isCompleted ? (
-                          <div className="flex items-center gap-2 p-2 rounded-md bg-green-100 text-green-700 font-medium">
-                            <Check /> Completada
+                          <div className={`flex items-center justify-center gap-2 p-2 rounded-md font-medium ${isAlternative ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                            <Check className="w-4 h-4" /> 
+                            <span className="text-sm">{isAlternative ? "Registrada" : "Completada"}</span>
                           </div>
                         ) : (
                           <>
-                            <Button variant="outline" size="sm" onClick={() => handleMarkAsDifferent(meal)} disabled={isDisabled}>
-                              <Flag className="w-4 h-4 mr-1" /> Comí Algo Diferente
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleMarkAsDifferent(meal)} 
+                              disabled={isDisabled}
+                              className="w-full sm:w-auto text-xs sm:text-sm"
+                            >
+                              <Flag className="w-4 h-4 sm:mr-1" /> 
+                              <span className="hidden sm:inline ml-1">Comí Algo Diferente</span>
+                              <span className="sm:hidden ml-1">Diferente</span>
                             </Button>
-                            <Button variant="default" size="sm" onClick={() => handleMarkAsComplete(meal)} disabled={isDisabled}>
-                              <Check className="w-4 h-4 mr-1" /> Marcar como Completada
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              onClick={() => handleMarkAsComplete(meal)} 
+                              disabled={isDisabled}
+                              className="w-full sm:w-auto text-xs sm:text-sm"
+                            >
+                              <Check className="w-4 h-4 sm:mr-1" /> 
+                              <span className="hidden sm:inline ml-1">Marcar como Completada</span>
+                              <span className="sm:hidden ml-1">Completar</span>
                             </Button>
                           </>
                         )}
@@ -704,8 +675,6 @@ const Dashboard = () => {
           profile={profile}
           onComidaAlternativaGuardada={async (comidaAlternativa) => {
             try {
-              // 1. Registrar la comida en 'comida_usuario' (NO actualizamos 'comida_dieta')
-              // Esto registra lo que realmente comiste (hamburguesas)
               const payload = {
                 ...comidaAlternativa,
                 usuario_id: usuario!.id,
@@ -714,12 +683,11 @@ const Dashboard = () => {
                 opcion: "alternativa",
               };
               const res = await createComidaUsuario(payload);
-              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa (Paso 1)");
+              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa");
 
               toast({ title: "Comida alternativa guardada" });
               setShowAdjustMealModal(false);
 
-              // 2. Llamar a la IA para re-ajustar el plan futuro
               try {
                 const toastAjuste = toast({
                   title: "Ajustando dieta con IA...",
@@ -785,6 +753,7 @@ const Dashboard = () => {
                   }
                 }
               } catch (err) {
+                dismiss(toastAjuste.id);
                 toast({ title: "Error de IA", description: (err as Error).message, variant: "destructive" });
               }
 
