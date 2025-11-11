@@ -1,7 +1,7 @@
 // Usamos el código de api.ts que me proporcionaste anteriormente.
 // Este archivo asume que las rutas de alias ("@/...") NO funcionan.
 
-const API_URL = "http://192.168.0.20:8000/api";
+const API_URL = `http://${import.meta.env.VITE_LAN_IP}:${import.meta.env.VITE_API_PORT}/api`;
 
 let authToken: string | null = null;
 

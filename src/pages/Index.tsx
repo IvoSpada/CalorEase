@@ -273,7 +273,7 @@ const Index = () => {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               ¿Por qué elegir{" "}
               <span className="bg-gradient-accent bg-clip-text text-transparent">
-                CalorEase?
+                CalorEase
               </span>
               ?
             </h2>
