@@ -132,7 +132,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
     setHasAnalyzed(false);
 
     try {
-      const prompt = `Analiza la siguiente comida: "${foodText}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida, ej: "Milanesa con papas"), "calorias", "proteinas", "carbohidratos", y "grasas". Si no puedes estimar un valor nutricional, usa null.`;
+      const prompt = `Analiza la siguiente comida: "${foodText}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida, ej: "Milanesa con papas"), "calorias", "proteinas", "carbohidratos", y "grasas".`;
       
       const r = await analyzeFood(prompt, usuario ? {
         peso: usuario.peso,

@@ -704,20 +704,8 @@ const Dashboard = () => {
           profile={profile}
           onComidaAlternativaGuardada={async (comidaAlternativa) => {
             try {
-              // 1. Actualizar la comida_dieta original con los macros alternativos
-              const updatePayload = {
-                descripcion: comidaAlternativa.descripcion,
-                calorias: comidaAlternativa.calorias,
-                proteinas: comidaAlternativa.proteinas,
-                carbohidratos: comidaAlternativa.carbohidratos,
-                grasas: comidaAlternativa.grasas,
-              };
-              const updateRes = await updateComidaDieta(mealToAdjust.id, updatePayload);
-              if (!updateRes.ok) {
-                throw new Error(updateRes.data?.message || "No se pudo actualizar la comida en el plan (Paso 1)");
-              }
-
-              // 2. Registrar la comida en 'comida_usuario'
+              // 1. Registrar la comida en 'comida_usuario' (NO actualizamos 'comida_dieta')
+              // Esto registra lo que realmente comiste (hamburguesas)
               const payload = {
                 ...comidaAlternativa,
                 usuario_id: usuario!.id,
@@ -726,12 +714,12 @@ const Dashboard = () => {
                 opcion: "alternativa",
               };
               const res = await createComidaUsuario(payload);
-              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa (Paso 2)");
+              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa (Paso 1)");
 
               toast({ title: "Comida alternativa guardada" });
               setShowAdjustMealModal(false);
 
-              // 3. Llamar a la IA
+              // 2. Llamar a la IA para re-ajustar el plan futuro
               try {
                 const toastAjuste = toast({
                   title: "Ajustando dieta con IA...",
