@@ -1,7 +1,127 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const path = require("path");
+const path = require("path"); // <-- Importado aquí
+const fs = require("fs");   // <-- Importado aquí
+const os = require("os");   // <-- Importado aquí
+
+// --- INICIO: Bloque para auto-actualizar el .env ---
+
+/**
+ * Busca la IP de LAN principal (IPv4, no interna).
+ */
+/**
+ * Busca la IP de LAN principal, dando prioridad a los rangos de red privada.
+ */
+function getLanIp() {
+  const interfaces = os.networkInterfaces();
+  const candidates = [];
+
+  // 1. Recopilar todos los candidatos de IPv4
+  for (const name of Object.keys(interfaces)) {
+    const ifaceList = interfaces[name] || [];
+    for (const iface of ifaceList) {
+      // Omitir direcciones internas (como 127.0.0.1) y no-IPv4
+      if (iface.family === 'IPv4' && !iface.internal) {
+        candidates.push(iface.address);
+      }
+    }
+  }
+
+  // 2. Analizar los candidatos y priorizar
+  //    Tenemos: ['26.48.114.240', '192.168.0.20'] (en algún orden)
+
+  // Prioridad #1: Buscar IPs de LAN '192.168.x.x' (la más común en hogares)
+  const homeLanIp = candidates.find(ip => ip.startsWith('192.168.'));
+  if (homeLanIp) {
+    console.log(`[Env Auto-Update] IP de LAN (192.168) encontrada: ${homeLanIp}`);
+    return homeLanIp;
+  }
+
+  // Prioridad #2: Buscar IPs '10.x.x.x' (común en empresas)
+  const corporateLanIp = candidates.find(ip => ip.startsWith('10.'));
+  if (corporateLanIp) {
+    console.log(`[Env Auto-Update] IP de LAN (10.) encontrada: ${corporateLanIp}`);
+    return corporateLanIp;
+  }
+
+  // Prioridad #3: Buscar IPs '172.16.x.x' a '172.31.x.x' (menos común)
+  const otherLanIp = candidates.find(ip => /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip));
+  if (otherLanIp) {
+    console.log(`[Env Auto-Update] IP de LAN (172.) encontrada: ${otherLanIp}`);
+    return otherLanIp;
+  }
+
+  // Fallback: Si no se encuentra ninguna IP de LAN, usar el primer candidato
+  // (Este sería el caso de tu VPN, '26.48.114.240')
+  if (candidates.length > 0) {
+    console.warn(`[Env Auto-Update] No se encontró IP de LAN privada. Usando la primera IP disponible: ${candidates[0]}`);
+    return candidates[0];
+  }
+  
+  // Fallback final: Si no se encontró nada
+  return "127.0.0.1";
+}
+
+/**
+ * Actualiza o añade una variable en el contenido de un archivo .env.
+ * @param {string} content - El contenido actual del archivo .env
+ * @param {string} key - La clave a actualizar (ej. "VITE_LAN_IP")
+ * @param {string} value - El nuevo valor (ej. "192.168.0.20")
+ * @returns {string} - El nuevo contenido del .env
+ */
+function updateEnvVar(content, key, value) {
+  const regex = new RegExp(`^(${key}=)(.*)$`, 'm'); // 'm' para multilínea
+  if (regex.test(content)) {
+    // La variable existe, la actualizamos
+    console.log(`[Env Auto-Update] Actualizando ${key} a ${value}`);
+    return content.replace(regex, `$1${value}`);
+  } else {
+    // La variable no existe, la añadimos al final
+    console.log(`[Env Auto-Update] Añadiendo ${key}=${value}`);
+    // Asegurarse de que haya un salto de línea si el archivo no termina con uno
+    const newContent = content.trimEnd();
+    return newContent + `\n${key}=${value}\n`;
+  }
+}
+
+/**
+ * Función principal que se auto-ejecuta para leer y actualizar el .env.
+ */
+function updateEnvFile() {
+  try {
+    const newIp = getLanIp();
+    if (newIp === '127.0.0.1') {
+      console.warn("[Env Auto-Update] No se pudo encontrar IP de LAN. Usando 127.0.0.1 como fallback.");
+    }
+
+    const envPath = path.join(__dirname, ".env");
+
+    let envContent = "";
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf8');
+    } else {
+      console.warn(`[Env Auto-Update] No se encontró el archivo .env en ${envPath}. Se creará uno.`);
+    }
+
+    // Actualizar ambas variables con la misma IP
+    envContent = updateEnvVar(envContent, 'VITE_LAN_IP', newIp);
+    envContent = updateEnvVar(envContent, 'VITE_IA_HOST', newIp);
+    
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    console.log(`[Env Auto-Update] Archivo .env actualizado con IP: ${newIp}`);
+
+  } catch (err) {
+    console.error("🔥 Error al auto-actualizar el archivo .env:", err.message);
+    // Continuamos de todos modos, el servidor intentará arrancar.
+  }
+}
+
+// ¡Ejecutamos la lógica ANTES de cargar dotenv!
+updateEnvFile();
+
+// --- FIN: Bloque para auto-actualizar el .env ---
+
 
 // Cargar variables de entorno
 dotenv.config({ path: path.join(__dirname, ".env") });

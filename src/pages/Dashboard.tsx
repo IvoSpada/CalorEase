@@ -94,7 +94,7 @@ const Dashboard = () => {
   // Estado para la navegación por días
   const [todayStr, setTodayStr] = useState(getFormattedDateString(new Date()));
   const [displayDate, setDisplayDate] = useState(new Date());
-  
+
   // Actualizar 'todayStr' si el día cambia (ej. a medianoche)
   useEffect(() => {
     const interval = setInterval(() => {
@@ -131,7 +131,7 @@ const Dashboard = () => {
           dietasRes.data.find((d) => d.estado && d.estado.trim().toLowerCase() === "activa") ??
           null;
         setActiveDiet(currentActiveDiet);
-        
+
         if (!selectedDietaIdForViewing && currentActiveDiet) {
           setSelectedDietaIdForViewing(String(currentActiveDiet.id));
         }
@@ -198,12 +198,12 @@ const Dashboard = () => {
   // Comidas consumidas filtradas por el día que se está mostrando
   const displayedComidasConsumidas = useMemo(() => {
     if (!comidasConsumidas) return [];
-    return comidasConsumidas.filter((c) => 
+    return comidasConsumidas.filter((c) =>
       c.fecha && c.fecha === displayDateStr && c.comida_dieta_id !== null
     );
   }, [comidasConsumidas, displayDateStr]);
 
-  // Comidas adicionales
+  // Comidas adicionales (no planificadas)
   const displayedComidasAdicionales = useMemo(() => {
     if (!comidasConsumidas) return [];
     return comidasConsumidas.filter((c) =>
@@ -214,16 +214,48 @@ const Dashboard = () => {
   // Verificar si hay comidas alternativas hoy
   const hayComidasAlternativasHoy = useMemo(() => {
     if (!comidasConsumidas) return false;
-    return comidasConsumidas.some((c) => 
-      c.fecha === displayDateStr && c.opcion === 'alternativa'
+    return comidasConsumidas.some((c) =>
+      c.fecha === displayDateStr && c.opcion === "alternativa"
     );
   }, [comidasConsumidas, displayDateStr]);
+
+  // --- CÁLCULO DE CALORÍAS ---
+
+  const sumCalorias = (comidas: { calorias?: number | null }[]) => {
+    return comidas.reduce((acc, comida) => acc + (Number(comida.calorias) || 0), 0);
+  };
+
+  // 1. Calorías Diarias
+  const caloriasDiariasPlanificadas = useMemo(() => {
+    return sumCalorias(displayedComidas);
+  }, [displayedComidas]);
+
+  const caloriasDiariasIngeridas = useMemo(() => {
+    const consumidas = sumCalorias(displayedComidasConsumidas);
+    const adicionales = sumCalorias(displayedComidasAdicionales);
+    return consumidas + adicionales;
+  }, [displayedComidasConsumidas, displayedComidasAdicionales]);
+
+  // 2. Calorías Totales de la Dieta Activa
+  const caloriasTotalesPlanificadas = useMemo(() => {
+    return sumCalorias(comidasPlanificadas);
+  }, [comidasPlanificadas]);
+
+  const caloriasTotalesIngeridas = useMemo(() => {
+    if (!activeDiet) return 0;
+    const idsComidasDietaActiva = new Set(comidasPlanificadas.map(c => c.id));
+    const consumidasDeDietaActiva = comidasConsumidas.filter(c =>
+      (c.comida_dieta_id && idsComidasDietaActiva.has(c.comida_dieta_id)) ||
+      (c.comida_dieta_id === null && activeDiet.fecha_inicio && activeDiet.fecha_fin && c.fecha >= activeDiet.fecha_inicio && c.fecha <= activeDiet.fecha_fin)
+    );
+    return sumCalorias(consumidasDeDietaActiva);
+  }, [comidasConsumidas, comidasPlanificadas, activeDiet]);
 
   // Calcula los días transcurridos de la dieta activa
   const diasTranscurridos = useMemo(() => {
     if (!activeDiet?.fecha_inicio) return 0;
     const inicio = parseDateAsLocal(activeDiet.fecha_inicio).getTime();
-    const hoy = new Date(todayStr).getTime(); 
+    const hoy = new Date(todayStr).getTime();
     const diff = Math.max(0, hoy - inicio);
     return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
   }, [activeDiet, todayStr]);
@@ -295,7 +327,7 @@ const Dashboard = () => {
         }
 
         toast({ title: "¡Comida Completada!", description: comida.descripcion, variant: "default" });
-        
+
         const comidasConsRes = await getComidasUsuario(usuario.id);
         if (comidasConsRes.ok && Array.isArray(comidasConsRes.data)) {
           setComidasConsumidas(comidasConsRes.data);
@@ -364,7 +396,7 @@ const Dashboard = () => {
     if (!dietaSeleccionada) return;
 
     let comidasParaVer: ComidaDieta[] = [];
-    
+
     if (dietaSeleccionada.id === activeDiet?.id) {
       comidasParaVer = comidasPlanificadas;
     } else {
@@ -378,7 +410,7 @@ const Dashboard = () => {
         return;
       }
     }
-    
+
     setDataForViewModal({ dieta: dietaSeleccionada, comidas: comidasParaVer });
     setShowViewDietModal(true);
   }, [selectedDietaIdForViewing, dietas, activeDiet?.id, comidasPlanificadas]);
@@ -418,7 +450,7 @@ const Dashboard = () => {
           Tu Resumen, <span className="text-primary">{profile?.nombre ?? "Usuario"}</span>
         </h1>
 
-        {/* Resumen Diario */}
+        {/* RESUMEN DE CALORÍAS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card>
             <CardContent className="p-6 text-center">
@@ -432,19 +464,21 @@ const Dashboard = () => {
 
           <Card>
             <CardContent className="p-6 text-center">
-              <Utensils className="w-8 h-8 mx-auto mb-2" />
+              <Utensils className="w-8 h-8 mx-auto mb-2 text-green-600" />
               <div className="text-2xl font-bold">
-                {displayedComidasConsumidas.length} / {displayedComidas.length}
+                {caloriasDiariasIngeridas} / {caloriasDiariasPlanificadas}
               </div>
-              <div className="text-sm text-muted-foreground">Comidas de {isViewingToday ? "Hoy" : displayDateStr}</div>
+              <div className="text-sm text-muted-foreground">Calorías (Ingeridas / Plan) - {isViewingToday ? "Hoy" : displayDateStr}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-6 text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2" />
-              <div className="text-2xl font-bold">Día {diasTranscurridos}</div>
-              <div className="text-sm text-muted-foreground">de tu Dieta Actual</div>
+              <Calendar className="w-8 h-8 mx-auto mb-2 text-blue-500" />
+              <div className="text-2xl font-bold">
+                {caloriasTotalesIngeridas} / {caloriasTotalesPlanificadas}
+              </div>
+              <div className="text-sm text-muted-foreground">Calorías (Ingeridas / Plan) - Dieta Total</div>
             </CardContent>
           </Card>
         </div>
@@ -470,7 +504,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Botón Replanificar */}
+        {/* BOTÓN REPLANIFICAR */}
         {hayComidasAlternativasHoy && (
           <div className="mb-8">
             <Button variant="destructive" size="lg" className="w-full">
@@ -667,6 +701,20 @@ const Dashboard = () => {
           profile={profile}
           onComidaAlternativaGuardada={async (comidaAlternativa) => {
             try {
+              // 1. Actualizar la comida_dieta original con los macros alternativos
+              const updatePayload = {
+                descripcion: comidaAlternativa.descripcion,
+                calorias: comidaAlternativa.calorias,
+                proteinas: comidaAlternativa.proteinas,
+                carbohidratos: comidaAlternativa.carbohidratos,
+                grasas: comidaAlternativa.grasas,
+              };
+              const updateRes = await updateComidaDieta(mealToAdjust.id, updatePayload);
+              if (!updateRes.ok) {
+                throw new Error(updateRes.data?.message || "No se pudo actualizar la comida en el plan (Paso 1)");
+              }
+
+              // 2. Registrar la comida en 'comida_usuario'
               const payload = {
                 ...comidaAlternativa,
                 usuario_id: usuario!.id,
@@ -675,11 +723,12 @@ const Dashboard = () => {
                 opcion: "alternativa",
               };
               const res = await createComidaUsuario(payload);
-              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa");
+              if (!res.ok) throw new Error(res.data?.message || "No se pudo guardar la comida alternativa (Paso 2)");
 
               toast({ title: "Comida alternativa guardada" });
               setShowAdjustMealModal(false);
 
+              // 3. Llamar a la IA
               try {
                 const toastAjuste = toast({
                   title: "Ajustando dieta con IA...",
@@ -745,7 +794,6 @@ const Dashboard = () => {
                   }
                 }
               } catch (err) {
-                dismiss(toastAjuste.id);
                 toast({ title: "Error de IA", description: (err as Error).message, variant: "destructive" });
               }
 
