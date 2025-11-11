@@ -60,35 +60,3 @@ Clonar Repo → Instalar Dependencias → Python Vite + QR → Backend Express �
 <p align="center">
   <em>Listo para usar!</em>
 </p>
-
-<ul>
-    <li>
-        Función para "Comí algo diferente": Permite al usuario
-        modificar una comida específica del día.
-    </li>
-    <li>
-        Botón para "Alterar dieta entera": Permite cambiar el plan
-        completo.
-    </li>
-    <li>
-        Apartado de seguimiento de calorías:
-        <ul>
-            <li>Calorías esperadas (plan de dieta)</li>
-            <li>Calorías logradas (comida real del usuario)</li>
-        </ul>
-    </li>
-    <li>Apartado de seguimiento de agua.</li>
-    <li>
-        Inclusión de un gráfico de barras (para visualizar el
-        progreso).
-    </li>
-    <li>
-        Lógica de 'fetch' (peticiones al servidor) que considera el
-        objetivo del usuario:
-        <ul>
-            <li>Mantener peso</li>
-            <li>Bajar peso</li>
-            <li>Subir peso</li>
-        </ul>
-    </li>
-</ul>

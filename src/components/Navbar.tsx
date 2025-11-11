@@ -1,52 +1,55 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/AuthModal";
-import { Bot, User, Menu, X } from "lucide-react";
+import { Bot, User, Menu, X, Home, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth"; // Si tienes un hook de autenticación para login/register
+import { useAuth } from "@/hooks/useAuth";
 
 export const Navbar = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authType, setAuthType] = useState<"login" | "register">("login");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const { login, register } = useAuth(); // Asegúrate de tener un hook para login y registro
 
-  // Maneja el submit del formulario
+  const { login, register, isLoggedIn, logout } = useAuth();
+
   const handleSubmit = async (payload: any) => {
     if (authType === "register") {
-      // Si es registro, pasa los datos a la función de registro
       try {
-        const result = await register(payload); // Asegúrate de que tu `register` esté correctamente implementado
+        const result = await register(payload);
         if (result.ok) {
           setShowAuthModal(false);
-          // Aquí puedes añadir más lógica, como redirigir al usuario o mostrar un mensaje de éxito
-        } else {
-          console.log("Error en el registro:", result.error);
+          navigate("/dashboard");
         }
+        return result;
       } catch (err) {
         console.error("Error al registrar usuario:", err);
+        return { ok: false, error: err };
       }
     } else {
-      // Si es login, pasa los datos a la función de login
       try {
-        const result = await login(payload); // Asegúrate de que tu `login` esté correctamente implementado
+        const result = await login(payload);
         if (result.ok) {
           setShowAuthModal(false);
-          // Lógica adicional al hacer login, como redirigir o mostrar mensaje de éxito
-        } else {
-          console.log("Error en el login:", result.error);
+          navigate("/dashboard");
         }
+        return result;
       } catch (err) {
         console.error("Error al iniciar sesión:", err);
+        return { ok: false, error: err };
       }
     }
   };
 
-  // Función para abrir el modal de login o registro
   const handleAuthClick = (type: "login" | "register") => {
     setAuthType(type);
     setShowAuthModal(true);
+    setMobileMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
     setMobileMenuOpen(false);
   };
 
@@ -59,6 +62,8 @@ export const Navbar = () => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("/");
     }
     setMobileMenuOpen(false);
   };
@@ -87,32 +92,54 @@ export const Navbar = () => {
                 <Bot size={18} />
                 <span>Chat-Bot</span>
               </button>
-              
-              <button
-                onClick={() => scrollToSection("about")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sobre nosotros
-              </button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleAuthClick("login")}
-                className="flex items-center space-x-2"
-              >
-                <User size={18} />
-                <span>Iniciar sesión</span>
-              </Button>
-              
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleAuthClick("register")}
-                className="bg-gradient-accent hover:bg-accent/90"
-              >
-                Crear cuenta
-              </Button>
+
+              {isLoggedIn ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/dashboard")}
+                    className="flex items-center space-x-2"
+                  >
+                    <LayoutDashboard size={18} />
+                    <span>Mi Dashboard</span>
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="bg-gradient-accent hover:bg-accent/90"
+                  >
+                    Cerrar Sesión
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => scrollToSection("about")}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Sobre nosotros
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAuthClick("login")}
+                    className="flex items-center space-x-2"
+                  >
+                    <User size={18} />
+                    <span>Iniciar sesión</span>
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleAuthClick("register")}
+                    className="bg-gradient-accent hover:bg-accent/90"
+                  >
+                    Crear cuenta
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -138,47 +165,72 @@ export const Navbar = () => {
                   <Bot size={18} />
                   <span>Chat-Bot</span>
                 </button>
-                
-                <button
-                  onClick={() => scrollToSection("about")}
-                  className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted w-full text-left"
-                >
-                  Sobre nosotros
-                </button>
-                
-                <div className="pt-2 border-t border-border space-y-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAuthClick("login")}
-                    className="w-full justify-start"
-                  >
-                    <User size={18} className="mr-2" />
-                    Iniciar sesión
-                  </Button>
-                  
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleAuthClick("register")}
-                    className="w-full bg-gradient-accent hover:bg-accent/90"
-                  >
-                    Crear cuenta
-                  </Button>
-                </div>
+
+                {isLoggedIn ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/dashboard")}
+                      className="flex items-center space-x-2 w-full px-3 py-2 text-left text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Mi Dashboard</span>
+                    </button>
+                    <div className="pt-2 border-t border-border">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleLogout}
+                        className="w-full bg-gradient-accent hover:bg-accent/90"
+                      >
+                        Cerrar Sesión
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => scrollToSection("about")}
+                      className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted w-full text-left"
+                    >
+                      Sobre nosotros
+                    </button>
+                    <div className="pt-2 border-t border-border space-y-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAuthClick("login")}
+                        className="w-full justify-start"
+                      >
+                        <User size={18} className="mr-2" />
+                        Iniciar sesión
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleAuthClick("register")}
+                        className="w-full bg-gradient-accent hover:bg-accent/90"
+                      >
+                        Crear cuenta
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
         </div>
       </nav>
 
-<AuthModal 
-  isOpen={showAuthModal}
-  onClose={() => setShowAuthModal(false)}
-  type={authType}
-  onSubmit={handleSubmit}  // Comentario
-/>
-
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        type={authType}
+        onSubmit={handleSubmit}
+        onSuccess={() => {
+          setShowAuthModal(false);
+          navigate("/dashboard");
+        }}
+      />
     </>
   );
 };
