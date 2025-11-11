@@ -9,6 +9,7 @@ import { AddFoodModal } from "@/components/AddFoodModal";
 import { GenerateDietModal } from "@/components/GenerateDietModal";
 import { AdjustMealModal } from "@/components/AdjustMealModal";
 import { ViewDietModal } from "@/components/ViewDietModal";
+import { ProgressChartModal } from "@/components/ProgressChartModal";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,15 +33,13 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  BarChart,
 } from "lucide-react";
 import UserMenu from "@/components/UserMenu";
 import type { Dieta, ComidaDieta, ComidaUsuario, Profile } from "@/types";
 
 // --- Funciones Helper de Fechas ---
 
-/**
- * Obtiene una fecha en formato YYYY-MM-DD
- */
 const getFormattedDateString = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -48,17 +47,11 @@ const getFormattedDateString = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-/**
- * Parsea una fecha YYYY-MM-DD como local (evita problemas de zona horaria)
- */
 const parseDateAsLocal = (dateString: string): Date => {
   const [year, month, day] = dateString.split("-").map(Number);
   return new Date(year, month - 1, day);
 };
 
-/**
- * Añade días a una fecha (Date) y devuelve una nueva Date
- */
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -85,11 +78,10 @@ const Dashboard = () => {
   const [showGenerateDietModal, setShowGenerateDietModal] = useState(false);
   const [showAdjustMealModal, setShowAdjustMealModal] = useState(false);
   const [mealToAdjust, setMealToAdjust] = useState<ComidaDieta | null>(null);
-
-  // Estado para el modal "Ver Dieta"
   const [showViewDietModal, setShowViewDietModal] = useState(false);
   const [dataForViewModal, setDataForViewModal] = useState<{ dieta: Dieta; comidas: ComidaDieta[] } | null>(null);
   const [selectedDietaIdForViewing, setSelectedDietaIdForViewing] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
 
   // Estado para la navegación por días
   const [todayStr, setTodayStr] = useState(getFormattedDateString(new Date()));
@@ -225,7 +217,6 @@ const Dashboard = () => {
     return comidas.reduce((acc, comida) => acc + (Number(comida.calorias) || 0), 0);
   };
 
-  // 1. Calorías Diarias
   const caloriasDiariasPlanificadas = useMemo(() => {
     return sumCalorias(displayedComidas);
   }, [displayedComidas]);
@@ -236,7 +227,6 @@ const Dashboard = () => {
     return consumidas + adicionales;
   }, [displayedComidasConsumidas, displayedComidasAdicionales]);
 
-  // 2. Calorías Totales de la Dieta Activa
   const caloriasTotalesPlanificadas = useMemo(() => {
     return sumCalorias(comidasPlanificadas);
   }, [comidasPlanificadas]);
@@ -251,7 +241,6 @@ const Dashboard = () => {
     return sumCalorias(consumidasDeDietaActiva);
   }, [comidasConsumidas, comidasPlanificadas, activeDiet]);
 
-  // Calcula los días transcurridos de la dieta activa
   const diasTranscurridos = useMemo(() => {
     if (!activeDiet?.fecha_inicio) return 0;
     const inicio = parseDateAsLocal(activeDiet.fecha_inicio).getTime();
@@ -497,6 +486,10 @@ const Dashboard = () => {
             <Calendar className="w-4 h-4 mr-2" />
             Ver Dieta Seleccionada
           </Button>
+          <Button variant="outline" size="lg" onClick={() => setShowProgressModal(true)} disabled={!activeDiet}>
+            <BarChart className="w-4 h-4 mr-2" />
+            Ver Progreso (Gráficos)
+          </Button>
           {!activeDiet && (
             <p className="text-red-500 self-center">
               Debes generar y activar una dieta para agregar comidas o ver tu plan.
@@ -507,10 +500,10 @@ const Dashboard = () => {
         {/* BOTÓN REPLANIFICAR */}
         {hayComidasAlternativasHoy && (
           <div className="mb-8">
-            <Button variant="destructive" size="lg" className="w-full">
+            {/* <Button variant="destructive" size="lg" className="w-full">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Detectamos una comida alternativa. ¿Replanificar dieta?
-            </Button>
+            </Button> */}
           </div>
         )}
 
@@ -690,6 +683,16 @@ const Dashboard = () => {
           onClose={() => setShowViewDietModal(false)}
           dieta={dataForViewModal.dieta}
           comidas={dataForViewModal.comidas}
+        />
+      )}
+
+      {showProgressModal && activeDiet && (
+        <ProgressChartModal
+          isOpen={showProgressModal}
+          onClose={() => setShowProgressModal(false)}
+          dieta={activeDiet}
+          comidasPlanificadas={comidasPlanificadas}
+          comidasConsumidas={comidasConsumidas}
         />
       )}
 
