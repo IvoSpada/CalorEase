@@ -64,8 +64,10 @@ Clonar Repo → Instalar Dependencias → Python Vite + QR → Backend Express �
 
 el .env deberia verse asi:
 
-GEMINI_API_KEY= (clave)
-VITE_LAN_IP=192.168.7.202
+GEMINI_API_KEY=(clave)
+VITE_LAN_IP=192.168.0.19
 PORT=5000
-VITE_IA_HOST=192.168.7.202
+VITE_IA_HOST=192.168.0.19
+VITE_IA_PORT=5000
+VITE_API_HOST=192.168.0.19
 VITE_API_PORT=8000
