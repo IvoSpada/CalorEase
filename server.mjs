@@ -1,10 +1,16 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
-const PQueue = require("p-queue").default;
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+import os from "os";
+import PQueue from "p-queue";
+import { fileURLToPath } from "url";
+import fetch from "node-fetch";
+
+// Obtener __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- INICIO: Bloque para auto-actualizar el .env ---
 
@@ -170,7 +176,6 @@ geminiQueue.on('error', (error) => {
 // Helper para llamar a Gemini (ahora con cola)
 async function callGemini(prompt, requestId = 'unknown') {
   return geminiQueue.add(async () => {
-    const fetch = (await import("node-fetch")).default;
     const bodyToSend = {
       contents: [{ parts: [{ text: prompt }] }],
     };
