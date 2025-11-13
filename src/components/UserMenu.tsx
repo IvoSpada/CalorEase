@@ -1,6 +1,13 @@
 // src/components/UserMenu.tsx
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, LogOut, User as UserIcon, Target, Home } from "lucide-react";
+import { 
+  ChevronDown, 
+  LogOut, 
+  User as UserIcon, 
+  Target, 
+  Home, 
+  Sparkles // <-- Ícono añadido
+} from "lucide-react";
 
 type Props = {
   profile?: { nombre?: string; email?: string; [k: string]: any } | null;
@@ -68,6 +75,14 @@ export default function UserMenu({ profile, onLogout, className = "" }: Props) {
           >
             <Target className="w-4 h-4" /> Dashboard
           </button>
+
+          {/* --- NUEVO ENLACE AL LIVE CHAT --- */}
+          {/* <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800"
+            onClick={() => (window.location.href = "/live-chat")}
+          >
+            <Sparkles className="w-4 h-4" /> Live Chat
+          </button> */}
 
           <button
             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800"

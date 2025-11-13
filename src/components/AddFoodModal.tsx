@@ -5,9 +5,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Card, CardContent } from "./ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Image as ImageIcon, X } from "lucide-react"; // Importar iconos
 import { useToast } from "../hooks/use-toast";
-import { analyzeFood } from "../services/iaService";
+import { analyzeFood, analyzeImage, ImagePayload } from "../services/iaService"; // Importar ambas funciones
 import { createComidaUsuario } from "../services/foodService";
 import { createComidaDieta } from "../services/dietService";
 import { useAuth } from "../hooks/useAuth";
@@ -29,7 +29,27 @@ const getDateStringFromLocal = (local: string): string => {
 }
 
 /**
+ * Helper para convertir un archivo a Base64 para la API
+ */
+const fileToBase64 = (file: File): Promise<ImagePayload> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = reader.result as string;
+      const parts = base64String.split(',');
+      const meta = parts[0];
+      const data = parts[1];
+      const mimeType = meta.split(';')[0].split(':')[1];
+      resolve({ mimeType, data });
+    };
+    reader.onerror = error => reject(error);
+  });
+}
+
+/**
  * Helper mejorado para extraer y parsear la respuesta de Gemini
+ * (Sin cambios, tu función es robusta y manejará ambas respuestas)
  */
 const parseGeminiResponse = (data: any): any | null => {
   console.log("🔍 Parseando respuesta Gemini:", data);
@@ -40,31 +60,30 @@ const parseGeminiResponse = (data: any): any | null => {
     return data;
   }
   
-  // Si viene envuelto en .data
+  // Si viene envuelto en .data (que puede ser objeto o string)
   if (data?.data) {
     if (typeof data.data === 'string') {
-      return parseGeminiResponse(data.data);
+      // Caso /analyze-image: data.data es un string JSON
+      console.log("🔍 Procesando .data (string)");
+      return parseGeminiResponse(data.data); // Recursión con el string
     }
     if (typeof data.data === 'object') {
-      return parseGeminiResponse(data.data);
+      // Caso /analyze-food: data.data es un objeto
+      console.log("🔍 Procesando .data (object)");
+      return parseGeminiResponse(data.data); // Recursión con el objeto
     }
   }
   
   // Si es un string, intentar extraer JSON
   if (typeof data === 'string') {
     console.log("🔍 Intentando extraer JSON de string:", data.substring(0, 100));
-    
-    // Eliminar bloques de código markdown (```json ... ```)
     let cleaned = data.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-    
-    // Buscar el primer { y el último }
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
     
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       const jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
       console.log("🔍 JSON extraído:", jsonStr);
-      
       try {
         const parsed = JSON.parse(jsonStr);
         console.log("✅ JSON parseado exitosamente:", parsed);
@@ -86,6 +105,8 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
 
   // Formulario
   const [text, setText] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null); // NUEVO: Estado para el archivo
+  const [imagePreview, setImagePreview] = useState<string | null>(null); // NUEVO: Estado para la preview
   const [fechaLocal, setFechaLocal] = useState(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -106,6 +127,28 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
   
   const [saving, setSaving] = useState(false);
 
+  // NUEVO: Handler para el cambio de archivo
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // NUEVO: Handler para quitar la imagen
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    // Resetear el valor del input para poder subir la misma imagen de nuevo
+    const fileInput = document.getElementById('imageInput') as HTMLInputElement;
+    if (fileInput) fileInput.value = "";
+  };
+
   // Reset modal al cerrar
   useEffect(() => {
     if (!isOpen) {
@@ -117,14 +160,22 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
       setGrasEdit("");
       setHasAnalyzed(false);
       setTipoComida("snack");
+      setImageFile(null); // NUEVO: Reset imagen
+      setImagePreview(null); // NUEVO: Reset imagen
     }
   }, [isOpen]);
 
-  // Analizar comida con IA
+  // Analizar comida con IA (LÓGICA ACTUALIZADA)
   const handleAnalyze = async () => {
     const foodText = text.trim();
-    if (!foodText) {
-      toast({ title: "Error", description: "Escribe una descripción para analizar", variant: "destructive" });
+    
+    // Validar que haya al menos texto o imagen
+    if (!foodText && !imageFile) {
+      toast({ 
+        title: "Error", 
+        description: "Escribe una descripción o sube una imagen para analizar", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -132,16 +183,33 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
     setHasAnalyzed(false);
 
     try {
-      const prompt = `Analiza la siguiente comida: "${foodText}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida, ej: "Milanesa con papas"), "calorias", "proteinas", "carbohidratos", y "grasas". Si no puedes estimar un valor nutricional, usa null.`;
-      
-      const r = await analyzeFood(prompt, usuario ? {
+      let r: any; // Declarar 'r' para la respuesta
+      const userProfile = usuario ? {
         peso: usuario.peso,
         altura: usuario.altura,
         edad: usuario.edad,
         objetivo: usuario.objetivo,
-      } : undefined);
+      } : undefined;
 
-      console.log("📦 Respuesta completa de analyzeFood:", r);
+      if (imageFile) {
+        // --- CASO 1: Hay imagen (usar analyzeImage) ---
+        
+        // El backend /analyze-image espera un prompt completo
+        const prompt = `Analiza la comida en la imagen, usando esta descripción si ayuda: "${foodText || 'Comida en imagen'}". Devuelve SOLAMENTE un objeto JSON válido (sin texto extra antes o después) con los siguientes campos: "descripcion" (un nombre breve para la comida), "calorias", "proteinas", "carbohidratos", y "grasas". Si no puedes estimar un valor nutricional, usa null.`;
+        
+        const imagePayload = await fileToBase64(imageFile);
+        
+        r = await analyzeImage(prompt, imagePayload, userProfile);
+
+      } else {
+        // --- CASO 2: Solo texto (usar analyzeFood) ---
+        
+        // El backend /analyze-food construye su propio prompt.
+        // Solo pasamos el texto de la comida.
+        r = await analyzeFood(foodText, userProfile);
+      }
+
+      console.log("📦 Respuesta completa de la IA:", r);
 
       if (!r.ok || !r.data) {
         toast({
@@ -152,7 +220,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         return;
       }
 
-      // Usar la nueva función de parsing mejorada
+      // Usar la función de parsing mejorada (funciona para ambos casos)
       const parsedData = parseGeminiResponse(r.data);
       
       if (!parsedData) {
@@ -164,7 +232,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         return;
       }
 
-      // Asignar valores con conversión segura a números
+      // Asignar valores (lógica idéntica a la anterior)
       setDescEdit(parsedData.descripcion ?? foodText);
       
       const calorias = parsedData.calorias;
@@ -193,6 +261,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
     }
   };
 
+  // Guardar comida (LÓGICA SIN CAMBIOS)
   const handleSave = async () => {
     if (!usuario) {
       toast({ title: "Error", description: "Debes iniciar sesión", variant: "destructive" });
@@ -252,7 +321,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
         usuario_id: usuario.id,
         fecha: fecha, 
         comida_dieta_id: newComidaDietaId,
-        opcion: "planificada",
+        opcion: "planificada", // Esta comida se 'planificó' y 'consumió' al mismo tiempo
         descripcion: descripcion,
         calorias: calorias,
         proteinas: proteinas,
@@ -290,12 +359,47 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
 
         <Card className="border-0 shadow-none">
           <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+            
+            {/* --- NUEVO: Input de Imagen --- */}
+            <div>
+              <Label className="text-sm">Subir Imagen (Opcional)</Label>
+              {imagePreview ? (
+                <div className="relative w-full h-48 border rounded-md flex items-center justify-center bg-muted/30">
+                  <img src={imagePreview} alt="Vista previa" className="max-h-full max-w-full object-contain rounded-md" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full"
+                    onClick={removeImage}
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <label
+                  htmlFor="imageInput"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50"
+                >
+                  <ImageIcon size={32} className="text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Haz clic para subir una foto</span>
+                  <Input 
+                    id="imageInput" 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              )}
+            </div>
+
             <div>
               <Label className="text-sm">Descripción de la comida</Label>
               <Textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Ej: Dos porciones de pizza y una gaseosa"
+                placeholder="Ej: Dos porciones de pizza y una gaseosa (o deja que la IA lo vea en la foto)"
                 className="h-20 sm:h-24 text-sm"
               />
             </div>
@@ -400,7 +504,7 @@ export const AddFoodModal = ({ isOpen, onClose, onSaved, activeDiet }: AddFoodMo
                       <Input 
                         type="number" 
                         value={carbEdit === "" ? "" : String(carbEdit)} 
-                        onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.target.value))}
+                        onChange={(e) => setCarbEdit(e.target.value === "" ? "" : Number(e.targe.value))}
                         className="text-sm"
                       />
                     </div>

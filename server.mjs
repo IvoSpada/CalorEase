@@ -7,6 +7,7 @@ import os from "os";
 import PQueue from "p-queue";
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Obtener __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -132,13 +133,13 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 app.use(express.static(__dirname));
 
 console.log("🔑 GEMINI_API_KEY loaded?", !!process.env.GEMINI_API_KEY);
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash-lite";
 const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const API_KEY = process.env.GEMINI_API_KEY;
 
@@ -172,6 +173,71 @@ geminiQueue.on('error', (error) => {
 });
 
 // ===== FIN CONFIGURACIÓN P-QUEUE =====
+
+//para el live chat
+
+// --- NUEVA INICIALIZACIÓN DE LA SDK DE GOOGLE ---
+let genAI;
+if (API_KEY) {
+  genAI = new GoogleGenerativeAI(API_KEY);
+  console.log("✅ SDK de Google Generative AI inicializada.");
+} else {
+  console.error("🔥 SDK de Google NO inicializada. Falta API_KEY.");
+}
+
+// ===== NUEVA RUTA: CHAT CON STREAMING (SSE) =====
+
+app.get("/api/chat-stream", async (req, res) => {
+  const requestId = `chat-${Date.now()}`;
+  const { prompt } = req.query;
+
+  console.log(`▶️ [${requestId}] /api/chat-stream llamado con: "${String(prompt).substring(0, 50)}..."`);
+
+  if (!genAI) {
+    return res.status(500).json({ error: "El servidor de IA no está inicializado." });
+  }
+  if (!prompt || typeof prompt !== "string") {
+    return res.status(400).json({ error: "Falta el 'prompt' en los query params" });
+  }
+
+  // 1. Establecer las cabeceras para Server-Sent Events (SSE)
+  // Esto mantiene la conexión abierta
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders(); // Enviar cabeceras inmediatamente
+
+  try {
+    // 2. Iniciar el modelo y la generación de stream
+    // (Usamos el modelo que mencionaste, o el que tengas configurado)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }); // O "gemini-1.5-flash" si prefieres
+    
+    const result = await model.generateContentStream(prompt);
+
+    // 3. Iterar sobre los chunks del stream
+    // La SDK de Google se encarga de la complejidad
+    for await (const chunk of result.stream) {
+      const text = chunk.text();
+      
+      // 4. Formatear y enviar el chunk como un evento SSE
+      // El formato es "data: {contenido}\n\n"
+      // Usamos JSON.stringify para manejar saltos de línea y caracteres especiales
+      res.write(`data: ${JSON.stringify(text)}\n\n`);
+    }
+    
+    console.log(`✅ [${requestId}] Stream completado.`);
+
+  } catch (err) {
+    console.error(`🔥 [${requestId}] Error en stream:`, err);
+    // Enviar un evento de error al cliente si es posible
+    const errorMsg = err instanceof Error ? err.message : "Error desconocido en el stream";
+    res.write(`data: ${JSON.stringify({ error: errorMsg })}\n\n`);
+  }
+
+  // 5. Enviar un mensaje de finalización y cerrar la conexión
+  res.write('data: [DONE]\n\n');
+  res.end();
+});
 
 // Helper para llamar a Gemini (ahora con cola)
 async function callGemini(prompt, requestId = 'unknown') {
@@ -368,6 +434,85 @@ app.get("/queue-stats", (req, res) => {
     pending: geminiQueue.pending,     // Peticiones procesando
     isPaused: geminiQueue.isPaused
   });
+});
+
+// NUEVA RUTA: Analizar imagen (multimodal)
+app.post("/analyze-image", async (req, res) => {
+  const requestId = `vision-${Date.now()}`;
+  const { prompt, image } = req.body; // { prompt: "...", image: { mimeType: "...", data: "..." } }
+
+  console.log(`▶️ [${requestId}] /analyze-image llamado con prompt: "${prompt}"`);
+
+  // Validación de entrada
+  if (!prompt || !image || !image.data || !image.mimeType) {
+    return res.status(400).json({ 
+      error: "Faltan datos: se requiere 'prompt', 'image.data' y 'image.mimeType'" 
+    });
+  }
+
+  // Construir el payload multimodal para Gemini
+  // Esto es diferente del payload de solo texto
+  const geminiPayload = {
+    contents: [
+      {
+        parts: [
+          { text: prompt }, // Parte 1: El texto
+          {
+            inlineData: { // Parte 2: La imagen
+              mimeType: image.mimeType,
+              data: image.data
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  console.log(`[${requestId}] Enviando payload multimodal a Gemini...`);
+
+  // Usamos la cola (P-Queue) para gestionar la petición
+  try {
+    const cleanedText = await geminiQueue.add(async () => {
+      console.log(`[${requestId}] Petición multimodal entra en la cola (Cola: ${geminiQueue.size} esperando)`);
+
+      const apiRes = await fetch(`${BASE_URL}?key=${API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(geminiPayload),
+      });
+
+      const rawText = await apiRes.text();
+      console.log(`⬅️ [${requestId}] Respuesta cruda Gemini (status ${apiRes.status}):`, rawText.substring(0, 200) + '...');
+
+      if (!apiRes.ok) {
+        throw new Error(`Gemini API error ${apiRes.status}: ${rawText}`);
+      }
+
+      const jsonLLM = JSON.parse(rawText);
+
+      // Manejar respuesta bloqueada (safety settings)
+      if (!jsonLLM.candidates || jsonLLM.candidates.length === 0) {
+        console.warn(`[${requestId}] Respuesta multimodal bloqueada o vacía de Gemini:`, jsonLLM);
+        // Comprobar si hay un 'promptFeedback' que explique por qué
+        const blockReason = jsonLLM.promptFeedback?.blockReason || "Razón desconocida";
+        throw new Error(`Respuesta bloqueada por Gemini (Razón: ${blockReason}) o vacía.`);
+      }
+
+      const candidate = jsonLLM.candidates[0];
+      let respuestaRaw = candidate.content.parts.map((p) => p.text).join("");
+      const cleaned = respuestaRaw.replace(/```(?:json)?/g, "").trim();
+
+      console.log(`✅ [${requestId}] Respuesta de visión limpia (${cleaned.length} chars)`);
+      return cleaned;
+    });
+
+    // La respuesta de Gemini (incluso con imágenes) es texto.
+    res.json({ ok: true, data: cleanedText });
+
+  } catch (err) {
+    console.error(`🔥 [${requestId}] Error en /analyze-image:`, err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 // Escuchar
