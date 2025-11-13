@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { useToast } from "../hooks/use-toast";
-import { useAuth } from "../hooks/useAuth";
+// --- INICIO DE CORRECCIÓN: Usar alias '@/' ---
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Wand2, CheckCircle, User } from "lucide-react";
-import { createDieta, createComidaDieta } from "../services/dietService";
-import { generateDiet } from "../services/iaService";
-import { api } from "../services/api";
-import type { Dieta, ComidaDieta, Profile } from "../types";
+import { createDieta, createComidaDieta } from "@/services/dietService";
+import { generateDiet } from "@/services/iaService";
+import { api } from "@/services/api";
+import type { Dieta, ComidaDieta, Profile } from "@/types";
+// --- FIN DE CORRECCIÓN ---
 
 type PlanGenerado = {
   dias: {
@@ -18,7 +20,7 @@ type PlanGenerado = {
     comidas: Omit<ComidaDieta, 'id' | 'dieta_id'>[];
   }[];
 };
-
+// ... (El resto del código permanece igual)
 interface GenerateDietModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -82,6 +84,7 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
     
     setLoadingProfile(true);
     try {
+      // Usamos /me que ya trae todos los datos del usuario logueado
       const res = await api.get("/me", true);
       if (res.ok && res.data) {
         setProfile(res.data);
@@ -113,13 +116,26 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
     setIsGenerating(true);
     setPlanGenerado(null);
 
+    // --- INICIO DE MODIFICACIÓN: PROMPT DINÁMICO ---
+    
     // Construir información del usuario para el prompt
-    const userInfo = `
-      Usuario: ${profile.genero ? getGeneroText(profile.genero) : 'persona'} de ${profile.edad} años
-      Peso: ${profile.peso}kg
-      Altura: ${profile.altura}cm
-      Objetivo físico: ${getObjetivoText(profile.objetivo)}
-    `;
+    const userInfoParts = [
+      `Usuario: ${profile.genero ? getGeneroText(profile.genero) : 'persona'} de ${profile.edad} años`,
+      `Peso: ${profile.peso}kg`,
+      `Altura: ${profile.altura}cm`,
+      `Objetivo físico: ${getObjetivoText(profile.objetivo)}`
+    ];
+
+    // Añadir solo si existen
+    if (profile.patologias) {
+      userInfoParts.push(`Patologías/Condiciones: ${profile.patologias}`);
+    }
+    if (profile.ejercicio) {
+      userInfoParts.push(`Nivel de Ejercicio: ${profile.ejercicio}`);
+    }
+    
+    const userInfo = userInfoParts.join('\n      '); // Unir con indentación
+    // --- FIN DE MODIFICACIÓN ---
 
     // Prompt mejorado con datos del usuario
     const fullPrompt = `
@@ -134,9 +150,9 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
       - Preferencias adicionales: "${promptUsuario}"
 
       IMPORTANTE: Ajusta las calorías y macronutrientes según el objetivo físico del usuario:
-      - Si el objetivo es "perder peso": déficit calórico moderado (15-20% menos de las calorías de mantenimiento)
+      - Si el objetivo es "perder peso": déficit calórico moderado (15-25% menos de las calorías de mantenimiento)
       - Si el objetivo es "mantener": calorías de mantenimiento
-      - Si el objetivo es "ganar peso": superávit calórico moderado (10-15% más)
+      - Si el objetivo es "ganar peso": superávit calórico moderado (14-19% más)
 
       Devuelve SOLAMENTE un objeto JSON válido. El objeto debe tener una clave raíz "dias".
       "dias" debe ser un array de objetos, uno por cada día desde la fecha de inicio hasta la de fin.
@@ -178,12 +194,12 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
           throw new Error("La IA devolvió un string que no es JSON.");
         }
       } else if (dataToParse.data && typeof dataToParse.data === 'string') {
-         const jsonMatch = dataToParse.data.match(/\{[\s\S]*\}/);
-         if (jsonMatch && jsonMatch[0]) {
-           dataToParse = JSON.parse(jsonMatch[0]);
-         } else {
-           throw new Error("La IA devolvió un string anidado que no es JSON.");
-         }
+          const jsonMatch = dataToParse.data.match(/\{[\s\S]*\}/);
+          if (jsonMatch && jsonMatch[0]) {
+            dataToParse = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error("La IA devolvió un string anidado que no es JSON.");
+          }
       }
 
       if (!dataToParse.dias || !Array.isArray(dataToParse.dias)) {
@@ -305,13 +321,23 @@ export const GenerateDietModal = ({ isOpen, onClose, onDietaCreada }: GenerateDi
                       Plan personalizado para:
                     </h3>
                   </div>
+                  {/* --- INICIO DE MODIFICACIÓN: VISTA PREVIA DINÁMICA --- */}
                   <div className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
                     <p>
                       • {profile.genero ? getGeneroText(profile.genero).charAt(0).toUpperCase() + getGeneroText(profile.genero).slice(1) : 'Persona'} de {profile.edad} años
                     </p>
                     <p>• Peso: {profile.peso}kg | Altura: {profile.altura}cm</p>
                     <p className="font-medium">• Objetivo: {getObjetivoText(profile.objetivo)}</p>
+                    
+                    {/* Añadir solo si existen */}
+                    {profile.patologias && (
+                      <p>• Patologías: {profile.patologias}</p>
+                    )}
+                    {profile.ejercicio && (
+                      <p>• Ejercicio: {profile.ejercicio}</p>
+                    )}
                   </div>
+                  {/* --- FIN DE MODIFICACIÓN --- */}
                 </div>
               )}
 
